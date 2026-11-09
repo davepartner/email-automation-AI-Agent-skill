@@ -3,7 +3,9 @@
     "delay_direction": "delay_minutes is measured from ENROLMENT: due_at = enrolled_at + delay_minutes",
     "kind": "marketing | transactional (transactional bypasses marketing unsubscribe)",
     "channel": "email | push | whatsapp | sms; non-email channels require explicit opt-in",
-    "priority": "lower number = higher precedence (purchase 1 … win-back 7); max 1 active marketing per user",
+    "priority": "lower number = higher precedence (purchase 1 … payday 6 … win-back 8); max 1 active promotional per user",
+    "nurture": "kind=nurture is per-product (payday); skips promotional precedence, shares the 1/day cap",
+    "schedule": "a step may use schedule {type:'calendar', day:27|'last'|2, hour} instead of delay_minutes",
     "templates": "each step 'copy' key resolves to a template in the 'templates' map (subject + body file)"
   },
   "master_enabled": false,
@@ -29,6 +31,9 @@
     "cart-reminder": { "subject": "did you get distracted? your cart is still here", "body": "templates/cart-1h.html" },
     "cart-social-proof": { "subject": "a few people asked about the {{product_name}}", "body": "templates/cart-24h.html" },
     "cart-incentive": { "subject": "your cart expires soon", "body": "templates/cart-72h.html" },
+    "payday-27": { "subject": "payday's here — your {{product_name}} is still waiting", "body": "templates/payday-27.html" },
+    "payday-last": { "subject": "one last nudge before the new month", "body": "templates/payday-last.html" },
+    "payday-2nd": { "subject": "happy new month, {{first_name}}", "body": "templates/payday-2nd.html" },
     "how-is-it": { "subject": "how's the {{product_name}} treating you?", "body": "templates/review-day1.html" },
     "experience-upsell": { "subject": "two weeks in — how's it going?", "body": "templates/review-14d.html" },
     "verify-account": { "subject": "please confirm your email", "body": "templates/verify.html" },
@@ -63,6 +68,21 @@
         { "position": 1, "delay_minutes": 60, "copy": "cart-reminder", "discount_pct": 0 },
         { "position": 2, "delay_minutes": 1440, "copy": "cart-social-proof", "discount_pct": 0 },
         { "position": 3, "delay_minutes": 3600, "copy": "cart-incentive", "discount_pct": 10, "expiry_hours": 48 }
+      ]
+    },
+    {
+      "key": "payday_reengage",
+      "name": "Payday re-engagement (pending product)",
+      "kind": "nurture",
+      "priority": 6,
+      "enabled": false,
+      "default_discount_pct": 0,
+      "trigger": { "event": "product_lead", "condition": "pending_after_7_days" },
+      "stop": ["purchase", "sequence_optout", "unsubscribe"],
+      "steps": [
+        { "position": 1, "schedule": { "type": "calendar", "day": 27, "hour": 9 }, "copy": "payday-27", "discount_pct": 0 },
+        { "position": 2, "schedule": { "type": "calendar", "day": "last", "hour": 9 }, "copy": "payday-last" },
+        { "position": 3, "schedule": { "type": "calendar", "day": 2, "hour": 9 }, "copy": "payday-2nd", "discount_pct": 0 }
       ]
     },
     {

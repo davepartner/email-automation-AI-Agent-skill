@@ -109,6 +109,11 @@ Full detail, copy intent, and stop conditions: `references/sequences.md`. Summar
 | 6 | **Upsell / cross-sell** | Purchase, other products exist | After value moment (3–7 days) | Purchase of promoted item |
 | 7 | **Win-back / re-engagement** | Inactive 30 / 60 / 90 days | Neutral → value → final "we'll stop" | Activity / unsubscribe |
 | 8 | **Replenishment** | Consumable product | ~Day 45–60 | Repurchase |
+| 9 | **Payday re-engage** | Product lead pending ≥ 7 days | 27th → last day → 2nd (calendar) | Purchase / per-product opt-out |
+
+**Payday is a *nurture* sequence** — per product, runs alongside the promotional sequence, and shares the
+one-marketing-email-per-day cap, so it never clashes with the cart reminders. On purchase the lead moves
+from **Leads → Paid** and enters the paid-product sequences.
 
 **Discounts:** upsells may carry a discount; abandoned carts carry **urgency + discount**. Default
 **0%** — when 0, the email must **not mention a discount at all**. A **min-cart guard** skips the
@@ -161,6 +166,10 @@ the ones the platform can detect and act on (`references/sequences.md`).
     explicit opt-in** and per-channel suppression. **Reuse the app's existing providers**; only add
     credentials when none exists (Settings → Channels). Prefer push → email → WhatsApp → SMS with
     fallback, and never send on two channels the same day. See `references/channels.md`.
+13. **Scoped unsubscribe + payday re-engagement.** A user can opt out of **one sequence for one product**
+    (not all email) — respect it at send time (`sequence-optout`). The **payday** sequence is a
+    per-product *nurture* that runs on calendar dates (27th → last day → 2nd) **after** the cart sequence
+    ends, and moves the lead **Leads → Paid** on purchase. See `references/sequences.md`.
 
 ---
 
@@ -200,10 +209,11 @@ the ones the platform can detect and act on (`references/sequences.md`).
   - **Statistics are not a tab** — they live at the top of Sequences so the admin sees performance and
     the list in one place.
 - **Admin-only tables** at the bottom of **product** and **checkout** pages:
-  - Tabs **Purchased** / **Abandoned** — clearly marked *"Admin only"*.
-  - Columns: email (→ user panel), registration/login/abandon datetimes, would-have-paid amount,
-    phone (→ `tel:` call), and a caret revealing **emails received + scheduled** that links to the user
-    panel to cancel/exclude.
+  - Tabs **Leads** (pending) / **Paid** — clearly marked *"Admin only"*. A purchase moves the user from
+    **Leads → Paid** and into the paid-product sequences.
+  - Columns: email (→ user panel), registration/login/abandon/purchase datetimes, would-have-paid
+    amount, phone (→ `tel:` call), and a caret revealing the sequence status (**active** /
+    **exited-unsubscribed** / **exited-purchased**).
   - Disable-able from Email Automation → Settings, with instructions under the table title + link.
 
 Full UI spec: `references/admin-ui.md`.

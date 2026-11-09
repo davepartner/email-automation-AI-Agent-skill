@@ -15,6 +15,8 @@ and every sequence is capped and respects frequency limits.
 >   discount at all**.
 > - **First email = no discount** (discounting early trains users to wait).
 > - **Bounded and suppressed.** Respect unsubscribe, hard bounce, spam complaint, and frequency caps.
+> - **Scoped unsubscribe.** A user can opt out of **one sequence for one product** without leaving all
+>   email. Respect it at send time (`sequence-optout`).
 > - **Channel-aware.** A step may target email, push, WhatsApp, or SMS. Prefer push → email → WhatsApp →
 >   SMS with fallback. Non-email channels require **explicit opt-in** and per-channel suppression
 >   (`references/channels.md`).
@@ -118,6 +120,31 @@ protects sender reputation (don't keep emailing the unresponsive).
 
 ---
 
+## 9. Payday re-engagement (pending product purchase)
+
+A **separate** follow-up for products the user tried to buy but didn't — timed to the **payday cycle**
+(most people are paid 25th–30th). It is **not** the 1h/24h/72h cart sequence: it starts only **after**
+that initial sequence has finished (~7 days after abandonment) and the product is still pending.
+
+| Step | When (calendar) | Intent | Discount |
+|------|-----------------|--------|----------|
+| 1 | **27th** | "You looked at {product} — payday's here if you still want it." | 0% |
+| 2 | **last day of the month** | Last nudge before the new month | optional |
+| 3 | **2nd** | "Happy new month, {name} — gift yourself the {product} you tried to buy." | optional |
+
+- **Trigger:** a `product_lead` still `lead`/`active`, abandoned **≥ 7 days ago** (so it doesn't clash
+  with the cart sequence), and no paid order for that product.
+- **Calendar scheduling:** steps use `schedule: { type: 'calendar', day: 27 | 'last' | 2, hour }` instead
+  of `delay_minutes` (`examples/schedule.mjs`).
+- **Stop:** purchase (→ moves to **Paid**, enters the paid-product sequences), **per-product
+  unsubscribe** (`sequence-optout`), global unsubscribe.
+- **Per-product:** each enrollment is scoped to `product_id`; the email references that product.
+- **No clash:** payday is a **nurture** sequence — it doesn't cancel or get cancelled by the promotional
+  sequence, and the **cross-sequence frequency cap (1 marketing email/user/day)** means it never doubles
+  up. If a send day collides, it defers.
+
+---
+
 ## Discount & urgency rules
 
 - **Default discount per sequence = 0%.** 0% ⇒ **omit any discount text entirely** (no "0% off", no
@@ -140,12 +167,17 @@ most one promotional sequence, highest priority wins (lower number = higher prio
 | 3 | Browse-abandon | welcome, win-back |
 | 4 | Welcome / activate | no-login, inactive |
 | 5 | No-login | inactive |
-| 6 | Inactive / re-engage | win-back |
-| 7 | Win-back | — |
+| 6 | **Payday re-engage (nurture)** | runs *alongside* the promotional sequence |
+| 7 | Inactive / re-engage | win-back |
+| 8 | Win-back | — |
 
 When higher priority enrols, cancel conflicting lower-priority scheduled rows. Never run two
 promotional sequences the same day (also enforced by frequency caps). **Enforce at most 1 active
 marketing sequence per user** — implemented and tested in `examples/worker.mjs`.
+
+**Nurture sequences (payday)** are scoped per product and **do not participate in precedence** — they
+won't cancel or be cancelled by the promotional sequence. The **cross-sequence frequency cap** (1
+marketing email/user/day) guarantees they never double up on the same day.
 
 **Kind:** tag every sequence `marketing` or `transactional`. Transactional/account reminders
 (verification, KYC, billing, 2FA, policy) **bypass marketing unsubscribe** but still avoid

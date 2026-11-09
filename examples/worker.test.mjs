@@ -27,6 +27,7 @@ function setup(opts = {}) {
   store.registerSequence('cart', { kind: KIND.MARKETING, priority: PRIORITY.cart });
   store.registerSequence('win_back', { kind: KIND.MARKETING, priority: PRIORITY.win_back });
   store.registerSequence('verify', { kind: KIND.TRANSACTIONAL, priority: 9 });
+  store.registerSequence('payday_reengage', { kind: KIND.NURTURE, priority: PRIORITY.payday });
   return { store, worker, sent };
 }
 
@@ -233,4 +234,59 @@ test('a suppressed channel is cancelled', async () => {
   assert.equal(r.cancelled, 1);
   assert.equal(sent.length, 0);
   assert.match([...store.rows.values()][0].reason, /channel-suppressed/);
+});
+
+test('a nurture (payday) sequence can run alongside a promotional sequence', () => {
+  const { store, worker } = setup();
+  store.setUser('u1', { email: 'u1@example.com' });
+
+  worker.enroll({ userId: 'u1', enrollmentId: 'e1', sequenceKey: 'cart', stepDefs: [{ id: 'c1', delayMinutes: 60 }], at: 0 });
+  const n = worker.enroll({ userId: 'u1', enrollmentId: 'e2', sequenceKey: 'payday_reengage', stepDefs: [{ id: 'p1', delayMinutes: 60 }], at: 0, productId: 'A' });
+
+  assert.equal(n, 1);
+  const scheduled = [...store.rows.values()].filter((r) => r.userId === 'u1' && r.status === 'scheduled');
+  assert.ok(scheduled.some((r) => r.sequenceKey === 'cart'));
+  assert.ok(scheduled.some((r) => r.sequenceKey === 'payday_reengage'));
+});
+
+test('a per-product opt-out cancels only that product’s sequence', async () => {
+  const { store, worker, sent } = setup();
+  store.setUser('u1', { email: 'u1@example.com' });
+  worker.enroll({ userId: 'u1', enrollmentId: 'e1', sequenceKey: 'payday_reengage', stepDefs: [{ id: 'p1', delayMinutes: 0 }], at: 0, productId: 'A' });
+  worker.enroll({ userId: 'u1', enrollmentId: 'e2', sequenceKey: 'payday_reengage', stepDefs: [{ id: 'p2', delayMinutes: 0 }], at: 0, productId: 'B' });
+  store.optOut('u1', 'payday_reengage', 'A');
+
+  const r = await worker.processDue();
+  assert.equal(r.sent, 1); // B still goes
+  const a = [...store.rows.values()].find((x) => x.productId === 'A');
+  assert.equal(a.status, 'cancelled');
+  assert.equal(a.reason, 'sequence-optout');
+});
+
+test('a sequence-wide opt-out (productId null) blocks every product', async () => {
+  const { store, worker } = setup();
+  store.setUser('u1', { email: 'u1@example.com' });
+  worker.enroll({ userId: 'u1', enrollmentId: 'e1', sequenceKey: 'payday_reengage', stepDefs: [{ id: 'p1', delayMinutes: 0 }], at: 0, productId: 'A' });
+  store.optOut('u1', 'payday_reengage', null);
+
+  const r = await worker.processDue();
+  assert.equal(r.cancelled, 1);
+});
+
+test('a calendar step schedules the next occurrence (the 27th)', () => {
+  const at = Date.UTC(2026, 0, 20, 10); // Jan 20
+  const { store, worker } = setup({ now: () => at });
+  store.setUser('u1', { email: 'u1@example.com' });
+
+  worker.enroll({
+    userId: 'u1',
+    enrollmentId: 'e1',
+    sequenceKey: 'payday_reengage',
+    stepDefs: [{ id: 'p1', schedule: { type: 'calendar', day: 27, hour: 9 } }],
+    at,
+    productId: 'A',
+  });
+
+  const row = [...store.rows.values()][0];
+  assert.equal(row.dueAt, Date.UTC(2026, 0, 27, 9));
 });

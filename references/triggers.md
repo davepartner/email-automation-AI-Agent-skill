@@ -82,6 +82,31 @@ On `purchase`, enrol in review/upsell, **delay by product type**:
 - digital/service → next day;
 - physical → after delivery + usage window (use `delivered_at` if available).
 
+## Payday re-engagement (pending product)
+
+A product lead is eligible when **all** hold:
+
+1. `product_leads.stage = 'lead'` and `status = 'active'`
+2. `abandoned_at <= now() - interval '7 days'` (the 1h/24h/72h cart sequence is done)
+3. no paid order for that product by the user
+
+```sql
+SELECT pl.user_id, pl.product_id
+FROM product_leads pl
+WHERE pl.stage = 'lead' AND pl.status = 'active'
+  AND pl.abandoned_at <= now() - interval '7 days'
+  AND NOT EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.user_id = pl.user_id AND o.product_id = pl.product_id AND o.paid_at IS NOT NULL
+  );
+```
+
+Enrol **once per (user, product)** (`trigger_ref = 'payday:' || product_id`). Steps are calendar-anchored
+(27th, last day, 2nd) — see `examples/schedule.mjs`.
+
+**On purchase:** move the lead to `paid` (`examples/leads.mjs` `moveToPaid`), cancel that product's
+`scheduled` cart/payday rows, and enrol the **paid-product** sequences (review/upsell).
+
 ## Replenishment (consumables)
 
 On purchase of a consumable, enrol with `due_at = purchased_at + product.usage_days` (default ~45–60).
@@ -103,5 +128,6 @@ On purchase of a consumable, enrol with `due_at = purchased_at + product.usage_d
 | `activated` | activation event after enrolment |
 | `reviewed` | a review exists since purchase |
 | `unsubscribed` | email in `email_suppressions` |
+| `sequence_optout` | user opted out of this sequence for this product (`email_optouts`) |
 
 Re-evaluate these **at send time**, not just at enrolment.

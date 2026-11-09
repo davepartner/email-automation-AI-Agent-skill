@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { nextOccurrence } from './schedule.mjs';
 
 // Reference scheduler/worker core. Zero runtime deps (node:crypto only).
 // Illustrative — swap MemoryStore for your DB (see references/reference-implementation.md
@@ -12,7 +13,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 let idSeq = 0;
 const nextId = () => `sched_${++idSeq}_${Math.random().toString(36).slice(2, 8)}`;
 
-export const KIND = { MARKETING: 'marketing', TRANSACTIONAL: 'transactional' };
+export const KIND = { MARKETING: 'marketing', TRANSACTIONAL: 'transactional', NURTURE: 'nurture' };
 
 // Lower number = higher priority (purchase wins over win-back).
 export const PRIORITY = {
@@ -21,8 +22,9 @@ export const PRIORITY = {
   browse: 3,
   welcome: 4,
   no_login: 5,
-  inactive: 6,
-  win_back: 7,
+  payday: 6,
+  inactive: 7,
+  win_back: 8,
 };
 
 export class MemoryStore {
@@ -37,6 +39,7 @@ export class MemoryStore {
     this.sequences = new Map(); // key -> { kind, priority }
     this.channelConsent = new Map(); // `${userId}:${channel}` -> boolean
     this.channelSuppressed = new Map(); // `${userId}:${channel}` -> reason
+    this.optOuts = new Map(); // `${userId}:${sequenceKey}:${productId|*}` -> reason
   }
 
   setUser(userId, { email, timezoneOffsetMinutes = 0, consentMarketing = true }) {
@@ -69,6 +72,16 @@ export class MemoryStore {
   isChannelSuppressed(userId, channel) {
     return this.channelSuppressed.has(`${userId}:${channel}`);
   }
+  /** Scoped opt-out: one sequence for one product (productId null = all products of that sequence). */
+  optOut(userId, sequenceKey, productId, reason = 'unsubscribed') {
+    this.optOuts.set(`${userId}:${sequenceKey}:${productId ?? '*'}`, reason);
+  }
+  isOptedOut(userId, sequenceKey, productId) {
+    return (
+      this.optOuts.has(`${userId}:${sequenceKey}:${productId ?? '*'}`) ||
+      this.optOuts.has(`${userId}:${sequenceKey}:*`)
+    );
+  }
   suppress(email, reason) {
     if (email) this.suppressions.set(email, reason);
   }
@@ -100,6 +113,7 @@ export class MemoryStore {
       kind: KIND.MARKETING,
       group: 'treatment',
       channel: 'email',
+      productId: null,
       ...row,
     });
   }
@@ -127,6 +141,7 @@ export class MemoryStore {
       sequenceKey: row.sequenceKey,
       kind: row.kind,
       channel: row.channel,
+      productId: row.productId ?? null,
       sentAt: now,
     });
   }
@@ -158,9 +173,12 @@ export class MemoryStore {
       (r) => r.status === 'sending' && r.lockedAt != null && now - r.lockedAt > timeoutMs,
     );
   }
-  sentSince(userId, since, kind) {
+  sentSince(userId, since, kinds = null) {
     return this.sent.filter(
-      (s) => s.userId === userId && s.sentAt >= since && (!kind || s.kind === kind),
+      (s) =>
+        s.userId === userId &&
+        s.sentAt >= since &&
+        (!kinds || kinds.includes(s.kind)),
     ).length;
   }
   activeMarketingPriority(userId) {
@@ -234,9 +252,12 @@ export class EmailWorker {
    * Materialise a sequence's steps. Enforces holdout + precedence:
    * only the highest-priority marketing sequence may be active per user.
    */
-  enroll({ userId, enrollmentId, sequenceKey, stepDefs, at = this.now(), group = 'treatment' }) {
+  enroll({ userId, enrollmentId, sequenceKey, stepDefs, at = this.now(), group = 'treatment', productId = null }) {
     const meta = this.store.sequenceMeta(sequenceKey);
 
+    // Precedence applies to PROMOTIONAL (marketing) sequences only. Nurture sequences
+    // (per-product payday reminders) and transactional ones are not cancelled here;
+    // same-day clashes are prevented by the cross-sequence frequency cap.
     if (meta.kind === KIND.MARKETING) {
       if (group === 'holdout') return 0; // holdout users get no marketing email
       const active = this.store.activeMarketingPriority(userId);
@@ -246,18 +267,25 @@ export class EmailWorker {
 
     let scheduled = 0;
     for (const step of stepDefs) {
+      const dueAt = step.schedule
+        ? step.schedule.type === 'calendar'
+          ? nextOccurrence(at, step.schedule.day, { hour: step.schedule.hour ?? 9 })
+          : at + (step.schedule.minutes ?? 0) * 60 * 1000
+        : at + (step.delayMinutes ?? 0) * 60 * 1000;
+
       this.store.insertScheduled({
         id: nextId(),
         enrollmentId,
         sequenceKey,
         stepId: step.id,
         userId,
-        dueAt: at + step.delayMinutes * 60 * 1000,
+        dueAt,
         stopCondition: step.stopCondition ?? 'purchased',
         kind: meta.kind,
         priority: meta.priority,
         group,
         channel: step.channel ?? 'email',
+        productId,
       });
       scheduled += 1;
     }
@@ -293,7 +321,14 @@ export class EmailWorker {
         }
       }
 
-      if (row.kind === KIND.MARKETING) {
+      // Scoped opt-out: the user unsubscribed from this sequence for this product.
+      if (this.store.isOptedOut(row.userId, row.sequenceKey, row.productId)) {
+        this.store.markCancelled(row.id, 'sequence-optout');
+        report.cancelled += 1;
+        continue;
+      }
+
+      if (row.kind !== KIND.TRANSACTIONAL) {
         if (this.store.isSuppressed(email)) {
           this.store.markCancelled(row.id, 'suppressed');
           report.cancelled += 1;
@@ -335,8 +370,8 @@ export class EmailWorker {
 
       // Frequency cap (marketing only).
       if (
-        row.kind === KIND.MARKETING &&
-        this.store.sentSince(row.userId, now - this.dayMs, KIND.MARKETING) >= this.maxPerDay
+        row.kind !== KIND.TRANSACTIONAL &&
+        this.store.sentSince(row.userId, now - this.dayMs, [KIND.MARKETING, KIND.NURTURE]) >= this.maxPerDay
       ) {
         this.deferOrCancel(row, now, 'frequency-cap', report);
         continue;
@@ -395,10 +430,10 @@ export function isWithinAllowedSendWindow(hour, start = 8, end = 21) {
 }
 
 /** Signed, unguessable unsubscribe token (HMAC-SHA256). */
-export function signUnsubscribeToken({ userId, email }, secret) {
-  const payload = Buffer.from(JSON.stringify({ userId, email })).toString('base64url');
-  const sig = createHmac('sha256', secret).update(payload).digest('base64url');
-  return `${payload}.${sig}`;
+export function signUnsubscribeToken(payload, secret) {
+  const body = Buffer.from(JSON.stringify(payload ?? {})).toString('base64url');
+  const sig = createHmac('sha256', secret).update(body).digest('base64url');
+  return `${body}.${sig}`;
 }
 
 /** Verify an unsubscribe token; returns the payload or null. */

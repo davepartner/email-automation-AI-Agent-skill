@@ -5,14 +5,15 @@ All tables are **new** — no existing table is altered. Names are illustrative;
 ```
 email_sequences
   id, key, name, enabled(bool), description,
-  kind(varchar, default 'marketing'),           -- marketing | transactional
+  kind(varchar, default 'marketing'),           -- marketing | transactional | nurture
   default_discount_pct(int, default 0),
   priority(int), holdout_pct(int, default 0),   -- lower priority = higher precedence
   created_at, updated_at
 
 email_sequence_steps
   id, sequence_id FK, position(int),
-  delay_minutes(int),                 -- due_at = enrol time + delay
+  delay_minutes(int),                 -- due_at = enrol time + delay (unless `schedule` is set)
+  schedule(jsonb, nullable),          -- {type:'calendar', day:27|'last'|2, hour} overrides delay
   subject, body_html, body_text,
   discount_pct(int, nullable),        -- null → sequence default; 0 → no discount text
   stop_condition(varchar),            -- purchased | logged_in | activated | reviewed
@@ -23,7 +24,8 @@ email_sequence_steps
 email_enrollments
   id, user_id FK, sequence_id FK,
   reason(varchar),                    -- why enrolled (trigger)
-  trigger_ref(varchar),               -- idempotency: cart id / session / date
+  trigger_ref(varchar),               -- idempotency: cart id / session / date / product id
+  product_id(varchar, nullable),      -- scope for product-specific sequences (payday)
   group(varchar, default 'treatment'),-- 'treatment' | 'holdout'
   status(active | completed | cancelled | suppressed),
   enrolled_at, completed_at, cancelled_at,
@@ -36,6 +38,7 @@ email_scheduled
   locked_at, attempts(int), deferrals(int, default 0), error(text),
   kind(varchar), priority(int), group(treatment | holdout),
   channel(varchar, default 'email'),           -- email | push | whatsapp | sms
+  product_id(varchar, nullable),               -- copied from the enrollment for scoped opt-outs
   UNIQUE(enrollment_id, step_id)      -- idempotency: never double-schedule
 
 email_sent                                   -- immutable audit log
@@ -63,6 +66,18 @@ email_suppressions
   id, email (unique), reason(unsubscribed | hard_bounce | complaint | admin),
   sequence_key(varchar, nullable),    -- null = all sequences
   created_at
+
+email_optouts                                -- scoped opt-out: one sequence for one product
+  id, user_id FK, sequence_key(varchar), product_id(varchar, nullable),
+  reason(unsubscribed | admin), created_at,
+  UNIQUE(user_id, sequence_key, product_id)  -- product_id null = all products of that sequence
+
+product_leads                                -- per-product lead / paid state
+  id, user_id FK, product_id(varchar),
+  stage(lead | paid), status(active | purchased | unsubscribed | expired),
+  amount(decimal, nullable), abandoned_at, last_activity_at, purchased_at,
+  created_at, updated_at,
+  UNIQUE(user_id, product_id)
 
 channel_settings                              -- provider + credentials per channel
   id, channel(email | push | whatsapp | sms), provider(varchar),
@@ -109,8 +124,15 @@ admin_audit
 
 - **`delay_minutes` is measured from ENROLMENT**, not from the previous step:
   `due_at = enrolled_at + step.delay_minutes` (step 3 at 3600 = 60h after enrolment).
-- **`kind`** — `marketing` | `transactional` (transactional bypasses marketing unsubscribe).
-- **`priority`** — lower number = higher precedence (purchase 1 … win-back 7); max 1 active marketing.
+- **`kind`** — `marketing` | `transactional` | `nurture`. `nurture` (payday) is marketing-like for consent
+  and frequency caps but is **per-product** and skips promotional precedence; `transactional` bypasses
+  marketing unsubscribe.
+- **`priority`** — lower number = higher precedence (purchase 1 … payday 6 … win-back 8); max 1 active
+  promotional sequence. Nurture sequences run alongside it.
+- **`schedule`** — calendar-anchored steps (27th, last day, 2nd) compute `due_at` via
+  `examples/schedule.mjs`; otherwise `due_at = enrolled_at + delay_minutes`.
+- **`product_id`** — scopes the enrollment/row to one product; used by the per-product payday sequence
+  and the scoped opt-out.
 - **`group`** — `treatment` | `holdout` (holdout receives no marketing email).
 - **`copy` keys** in `sequence-config.json` map to `templates` (subject/body) defined in the DB or
   `examples/email-templates.md`.

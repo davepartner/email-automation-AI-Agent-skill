@@ -39,6 +39,14 @@ List-Unsubscribe: <https://app.com/unsubscribe?token=...>, <mailto:unsubscribe@b
 List-Unsubscribe-Post: List-Unsubscribe=One-Click
 ```
 
+## Scoped unsubscribe (per product / sequence)
+
+A product reminder's unsubscribe link should opt the user out of **that sequence for that product**,
+not all marketing. Encode the scope in the signed token: `{ userId, email, sequenceKey, productId }`.
+The server records it in `email_optouts` and the worker cancels that scope with reason
+`sequence-optout`. The admin caret then shows **"Manually exited this sequence"**. A global
+unsubscribe (all marketing) still exists via `email_suppressions`.
+
 ## 3. Preference center
 
 - One page to choose which sequences/categories they receive, frequency, and to unsubscribe-all.

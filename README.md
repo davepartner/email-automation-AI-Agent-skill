@@ -38,6 +38,7 @@ nothing breaks and nothing sends until you say so.
 | **Designed with the UI/UX laws skill** | the page is built under `ui-ux-20-laws` — every decision (tabs, targets, drawers, states) is mapped to a law, with a Trace block + pre-ship checklist |
 | **Platform-aware sequences** | scouts your app's purpose and adds the reminders that fit — **email verification, profile completion, onboarding, KYC, billing/trial, booking, renewal**… |
 | **Multi-channel** | **email · push · WhatsApp · SMS** — reuses existing providers or lets the admin add API keys; users opt in per channel |
+| **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
 | **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
 | **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
 | **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |
@@ -60,6 +61,12 @@ nothing breaks and nothing sends until you say so.
 | 6 | **Upsell / cross-sell** | Purchase, other products exist | after value moment (3–7d) | optional |
 | 7 | **Win-back** | Inactive 30/60/90d | neutral → value → "we'll stop" | optional |
 | 8 | **Replenishment** | Consumable product | ~day 45–60 | optional |
+| 9 | **Payday re-engage** | Pending product lead ≥ 7 days | 27th → last day → 2nd | optional |
+
+**Payday is a nurture sequence** — per product, runs alongside the cart reminder, and shares the
+one-email-per-day cap so it never clashes. On purchase the user moves **Leads → Paid** and enters the
+paid-product sequences. A product reminder's "unsubscribe" opts out of **that one sequence for that
+product** (shown as "Manually exited this sequence" beside the caret).
 
 **Discount rule:** default **0%** — and at 0% the email **never mentions a discount**.
 

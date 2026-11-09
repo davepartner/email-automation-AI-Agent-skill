@@ -111,6 +111,18 @@ DELETE FROM email_scheduled WHERE status IN ('sent','cancelled','failed') AND du
 
 ---
 
+## Payday (calendar) scheduling & the Leads→Paid move
+
+- **Calendar steps:** compute `due_at` with `nextOccurrence(at, day, { hour })` (27th, `'last'`, `2nd`)
+  instead of `at + delay`. Store it in `email_scheduled.due_at`; the rest of the worker is unchanged.
+  See `examples/schedule.mjs`.
+- **Per-product scope:** set `email_enrollments.product_id` and copy it to
+  `email_scheduled.product_id`.
+- **On purchase:** for the product, call `moveToPaid(lead)` (`examples/leads.mjs`), cancel that product's
+  `scheduled` cart/payday rows, then enrol the **paid-product** sequences (review/upsell).
+- **Scoped opt-out:** record `email_optouts(user_id, sequence_key, product_id)`; the worker checks it
+  before sending and cancels with reason `sequence-optout`.
+
 ## Batching & scale
 
 - Process in **batches** (e.g. 100–500/s) so a big backlog doesn't time out.

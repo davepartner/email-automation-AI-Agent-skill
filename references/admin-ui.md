@@ -153,13 +153,17 @@ Two jobs: **find a user and control what they receive**, and **audit the log**.
 - **User panel:** email (→ profile), phone, registration/login dates, consent, holdout flag.
 - **Their emails, grouped by sequence** — each step with status (`sent` · `scheduled` · `cancelled` ·
   `failed`) and its date. A **down caret** on each sequence expands the full ordered list of emails
-  going out.
+  going out. **If the user opted out, a badge beside the caret reads "Manually exited this sequence"**,
+  and the expanded view shows *"Exited — unsubscribed"* (or *"Exited — purchased"* if they bought).
 - **Cancel one email:** a "Cancel" action on any **scheduled** step → `email_scheduled.status =
   'cancelled'` (confirm). Also record a per-step exclusion (`email_step_exclusions`) so it isn't
   re-scheduled.
 - **Exclude the user completely:** a prominent "Exclude from all automation" action → adds to
   `email_suppressions` (reason `admin`) and cancels all their scheduled rows. Offer **Re-include**
   (re-consent if they unsubscribed themselves).
+- **Per-product unsubscribe.** The unsubscribe link in a product reminder opts the user out of **that
+  sequence for that product** (`email_optouts`), not all marketing. The caret shows it as "Manually
+  exited this sequence"; the user can still receive other sequences.
 - Every change is written to `admin_audit`.
 
 ### The audit log
@@ -213,8 +217,12 @@ only."*).
 
 Two tabs:
 
-- **Purchased** — users who bought this product.
-- **Abandoned** — users who reached this cart/checkout but didn't purchase.
+- **Leads** — users who reached this cart/checkout but haven't purchased (the `lead` stage).
+- **Paid** — users who bought this product.
+
+When a lead purchases, they **move from Leads to Paid**, that lead's scheduled reminders are cancelled,
+and they're enrolled in the **paid-product** sequences (review/upsell). The row's caret reflects the new
+state.
 
 Columns:
 
@@ -223,10 +231,11 @@ Columns:
 | Email | **clickable → user profile** |
 | Registered | datetime |
 | Logged in | datetime |
-| Abandoned | datetime (abandoned tab) |
+| Abandoned at | datetime (Leads tab) |
+| Purchased at | datetime (Paid tab) |
 | Would have paid | amount + currency |
 | Phone | **clickable → `tel:` call** (if present) |
-| Emails ▾ | caret expands **emails received + scheduled** (what + when) and links to the user panel to cancel one or exclude the user |
+| Emails ▾ | caret expands the sequence (**active** / **exited-unsubscribed** / **exited-purchased**) and links to the user panel to cancel one or exclude the user |
 
 - The caret opens a small timeline: sent (with date) and scheduled (with due date).
 - Respect privacy: only aggregate the data the admin already has access to.
@@ -242,8 +251,8 @@ Columns:
 The admin can **hide these tables** from **Email Automation → Settings** with a single toggle. Put the
 instructions **right under the table title** for discoverability:
 
-> **Admin only · [Purchased | Abandoned]**
-> *To hide this table, go to Email Automation → Settings → "Show purchased/abandoned tables".*
+> **Admin only · [Leads | Paid]**
+> *To hide this table, go to Email Automation → Settings → "Show Leads/Paid tables".*
 > (link)
 
 When disabled, the table disappears from product/checkout pages but the automation keeps working.

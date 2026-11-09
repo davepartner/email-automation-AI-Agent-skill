@@ -35,6 +35,25 @@
 
 ## [1.0.0] — 2026-11-09
 
+### Payday re-engagement & Leads→Paid
+- **New `payday_reengage` sequence** (kind `nurture`, per product): calendar-anchored steps on the **27th
+  → last day → 2nd** for products still pending **≥ 7 days** after the initial cart reminders. Runs
+  alongside the promotional sequence; the 1-email/user/day cap prevents clashes.
+- **Calendar scheduling**: `examples/schedule.mjs` (`nextOccurrence`, `paydaySteps`) + tests, wired into
+  `worker.enroll` via `schedule: { type: 'calendar', day: 27|'last'|2, hour }`.
+- **Nurture kind** in the worker: marketing-like consent/cap, but skips promotional precedence; scoped
+  per `product_id` (`examples/worker.mjs`).
+- **Per-product opt-out**: `email_optouts` + scoped unsubscribe token (`sequence-optout`). Admin caret
+  shows **"Manually exited this sequence"**; the user can still receive other sequences.
+- **Leads → Paid**: `examples/leads.mjs` (`moveToPaid`, `isPaydayEligible`) + tests; on purchase the lead
+  moves to the **Paid** table, its reminders are cancelled, and paid-product sequences enrol.
+- Admin product/checkout tables renamed **Leads / Paid** with sequence status
+  (active / exited-unsubscribed / exited-purchased).
+- Docs updated: `sequences.md` (payday + nurture precedence), `triggers.md` (payday trigger + purchase
+  transition), `admin-ui.md` (Leads/Paid + caret badges), `data-model.md` (product_leads, email_optouts,
+  product_id, calendar schedule), `compliance.md` (scoped unsubscribe), `reference-implementation.md`,
+  `sequence-config.json`.
+
 ### Multi-channel (email · push · WhatsApp · SMS)
 - **Channels**: detect and reuse the app's existing push/SMS/WhatsApp provider; otherwise the admin adds
   API keys in **Settings → Channels** (test-send, enable/disable). New `references/channels.md`.
