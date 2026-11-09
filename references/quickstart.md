@@ -18,9 +18,12 @@ The minimal path to a working Email Automation section. Read the other reference
 5. **Sequences** (`sequences.md`) — start with the default 8 + platform-derived ones; set `kind`
    (`marketing`/`transactional`), priority, and discounts (0% = hidden).
 6. **Admin UI** (`admin-ui.md`) — 4 tabs; health banners; **start / pause / delete** (type `delete`);
-   users search / cancel one email / exclude; stats; settings.
+   users search / cancel one email / exclude; stats; settings. Run the UI/UX audit on the page **and
+   every table** (`admin-design-laws.md`): alignment, 44px actions, responsive columns, empty/loading/
+   error states.
 7. **Templates** (`wysiwyg.md` + `examples/render.mjs`) — **reuse an existing editor if present**;
-   email-safe pipeline; Mustache with the 0%-discount conditional.
+   email-safe pipeline; Mustache with the 0%-discount conditional. Run `email-design-laws.md` on the
+   set: one CTA, 600px single column, 16px body, contrast, dark mode, plain-text twin.
 8. **Compliance** (`compliance.md`) — consent, signed one-click unsubscribe, preference center,
    bounce/complaint webhooks, retention.
 9. **Non-disruption** (`non-disruption.md`) — backup, reversible migrations, smoke test, rollback

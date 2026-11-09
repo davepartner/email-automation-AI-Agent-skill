@@ -30,6 +30,16 @@ anything that already works.
 
 **Fast path:** `references/quickstart.md` (one page). **Depth:** the references below.
 
+> **Design standard (mandatory):** every admin page, **every table/list**, and **every email** is a
+> product surface. Before shipping any of them, load the **`ui-ux-20-laws`** skill (if available) and
+> run its **Audit → Implement → Trace** protocol. Use the app's design tokens for style, and these
+> references for the surface rules:
+> - `references/admin-design-laws.md` — the admin page and its data tables.
+> - `references/email-design-laws.md` — the email canvas, hierarchy, CTA, contrast, mobile, dark mode.
+>
+> If the skill is not available, apply the same laws inline. Never ship a page, table, or email
+> without its pre-ship checklist and a short `Trace:` block.
+
 ## The workflow
 
 ```
@@ -52,6 +62,9 @@ Study the app thoroughly and produce a short **integration plan**. See `referenc
 - Define the **data model** (`examples/data-model.md`): sequences, steps, enrolments, scheduled
   emails, sent log, settings, suppressions.
 - Choose the **sequence set** and timings (`references/sequences.md`).
+- **Run the UI/UX audit now**, not after coding: the admin page (`admin-design-laws.md`), every table
+  it exposes, and every email template (`email-design-laws.md`). Record the decisions that will become
+  the final `Trace:` block.
 
 ### 2. Build (additive only)
 - Add new tables/collections, a scheduler job, and the send worker. **Do not modify existing tables.**
@@ -64,8 +77,13 @@ Study the app thoroughly and produce a short **integration plan**. See `referenc
 ### 4. Admin UI
 - Build the page under the **`ui-ux-20-laws` skill** (if available): apply its Audit → Implement → Trace
   protocol, design tokens, and the per-surface map in `references/admin-design-laws.md`.
+- Design **every table** with the table rules in `admin-design-laws.md`: aligned columns, right-aligned
+  numbers, 44px row actions, pagination, responsive column hiding, empty/loading/error states,
+  keyboard sort, and status shown with text + colour (never colour alone).
 - Add a top-level **"Email Automation"** menu with tabs: **Sequences · Users & recipients · Statistics ·
   Settings**. See `references/admin-ui.md`.
+- Design **every email** with `email-design-laws.md`: one idea, one 44px CTA, 600px single column,
+  16px body, one accent, ≥4.5:1 contrast, alt text, dark mode, plain-text twin.
 - Add **admin-only** purchased/abandoned tables at the bottom of product and checkout pages.
 
 ### 5. Verify
@@ -123,9 +141,12 @@ the ones the platform can detect and act on (`references/sequences.md`).
    + physical address, no spam trigger words. See `references/sending-and-compliance.md`.
 8. **Everything auditable.** Every send is logged (who, which sequence/step, when, why) and every
    scheduled email is visible in the admin.
-9. **Beauty + seamlessness.** Build the page under the **`ui-ux-20-laws` skill** (if available) — apply
-   its laws, tokens, and Audit → Implement → Trace protocol (see `references/admin-design-laws.md`).
-   Match the app's design tokens so it looks native; clear hierarchy, 44px targets, accessible contrast.
+9. **Beauty + seamlessness — on every surface.** Build the admin page, its tables, **and the emails**
+   under the **`ui-ux-20-laws` skill** (if available): apply its laws, tokens, and Audit → Implement →
+   Trace protocol (`references/admin-design-laws.md`, `references/email-design-laws.md`). Match the
+   app's design tokens so it looks native; clear hierarchy, 44px targets, accessible contrast, one
+   primary action, one CTA per email. The pre-ship checklists and the `Trace:` block are part of the
+   deliverable, not optional polish.
 10. **Template editor: reuse before adding.** If the app already has a WYSIWYG editor, **reuse it**
     (configured for email). Otherwise add a **free, self-hosted** one (TinyMCE Community / Quill /
     TipTap / Summernote / GrapesJS). Output must be **email-safe** (inline CSS, tables, ~600px, no JS),
@@ -203,9 +224,12 @@ Full UI spec: `references/admin-ui.md`.
 4. The admin "Email Automation" page + tabs + statistics chart, including a **free WYSIWYG editor**,
    **add / reorder / delete steps**, a **user search + per-email cancel / exclude**, and **health
    warnings** (paused, cron not running, no mail transport).
-5. The admin-only purchased/abandoned tables.
-6. A preview/test-send tool + dry-run + rollback notes.
-7. A short **hand-off doc**: what was added, how to turn it on, how to pause, how to roll back.
+5. The admin-only purchased/abandoned tables, designed with the table laws.
+6. Email templates that pass `email-design-laws.md` (single column, one CTA, contrast, dark mode,
+   plain-text twin).
+7. A preview/test-send tool + dry-run + rollback notes.
+8. The **UI/UX traces and pre-ship checklists** for the page, its tables, and the email set.
+9. A short **hand-off doc**: what was added, how to turn it on, how to pause, how to roll back.
 
 ---
 
@@ -221,7 +245,10 @@ Full UI spec: `references/admin-ui.md`.
 - `references/compliance.md` — consent, signed unsubscribe, preference center, bounce/complaint webhooks.
 - `references/admin-ui.md` — the dashboard, users tab (search/cancel/exclude), log (100/page), stats,
   admin-only tables, WYSIWYG, add/edit steps.
-- `references/admin-design-laws.md` — the page mapped to the 20 UI/UX laws (Audit → Trace → checklist).
+- `references/admin-design-laws.md` — the admin page and tables mapped to the 20 UI/UX laws
+  (Audit → Trace → checklist).
+- `references/email-design-laws.md` — the 20 laws applied to the email canvas, hierarchy, CTA,
+  contrast, mobile, dark mode, and in-email tables (Trace → checklist).
 - `references/health-checks.md` — pause / cron-not-running / no-transport warnings with fix guidance.
 - `references/channels.md` — multi-channel (email · push · WhatsApp · SMS), detection, consent, limits.
 - `references/opt-in-prompts.md` — when and how to ask users to enable push/SMS/WhatsApp.

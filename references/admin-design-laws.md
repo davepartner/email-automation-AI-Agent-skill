@@ -37,6 +37,39 @@ Load from that skill:
 
 ---
 
+## Tables & data lists (every table, including the admin-only ones)
+
+A table is a UI, not a data dump. These rules apply to the sequences list, the users/recipients
+table, the sent log, the statistics breakdown, and the purchased/abandoned tables.
+
+| Decision | Law(s) | Rule |
+|----------|--------|------|
+| Column alignment | Continuity | Text left, numbers right, dates consistent; one column order everywhere |
+| Number formatting | Aesthetic-Usability | Tabular numerals, currency symbol, thousands separators; never `45000` |
+| Row height | Fitts's | ≥44px when the row or its actions are clickable |
+| Row actions | Fitts's + Occam's | 1–2 visible actions; the rest in a `⋯` menu with 44px targets |
+| Status | Similarity + accessibility | Text + colour badge ("Running", "Paused"); never colour alone |
+| Pagination | Miller's | 25 / 50 / 100 per page, show the total, preserve filters and sort |
+| Filters | Hick's + Miller's | ≤5 filters, chunked; advanced filters collapsed |
+| Long tables | Continuity | Sticky header; keep the sort indicator visible |
+| Responsive | Occam's | **Hide optional columns before allowing horizontal scroll.** Override a theme's
+  blanket `table { min-width: 800px }` when the remaining columns fit (e.g. `.table-responsive table`
+  scoped override). Never make the page itself scroll sideways. |
+| Empty state | Peak-End | Explain what will appear here and the next action — not "No data" |
+| Loading state | Doherty + Closure | Skeleton rows, not a frozen table |
+| Error state | Postel's | Human message + retry; keep filters and scroll position |
+| Accessibility | WCAG | `<caption>` or `aria-label`, `scope="col"`, `aria-sort`, keyboard-sortable headers,
+  focus-visible row actions |
+| Density | Occam's | Subtle hover or zebra — not both heavy; 8–12px cell padding |
+| Truncation | Postel's | Truncate long text with a `title`/expand affordance, never mid-word silently |
+
+**Table checklist before shipping:** alignment and number formatting correct; 44px actions; status is
+text + colour; pagination total shown; filters preserved; optional columns hidden on mobile with no
+page-level horizontal scroll; empty/loading/error states present; headers and sort are accessible;
+currency formatted with the app's symbol.
+
+---
+
 ## Audit (before coding)
 
 - **Hick's:** is every screen's primary-action count ≤5? Are tabs ≤4?

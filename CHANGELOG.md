@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-09 — UI/UX standard extended to tables and emails
+
+- Added `references/email-design-laws.md`: the 20 laws applied to the email canvas (600px, 16px body,
+  one CTA, one accent, contrast, dark mode, alt text, in-email tables, plain-text twin) with a
+  pre-ship checklist and Trace example.
+- `references/admin-design-laws.md`: new "Tables & data lists" section covering alignment, number
+  formatting, 44px row actions, pagination, responsive column hiding (including overriding blanket
+  theme min-widths), empty/loading/error states and accessible sorting.
+- `SKILL.md`: a mandatory design standard now covers **every admin page, table and email**, not just
+  the page; deliverables include the UI/UX traces and pre-ship checklists.
+- Quickstart updated with the design pass for tables and email templates.
+
+
 ## [1.0.0] — 2026-11-09
 
 ### Multi-channel (email · push · WhatsApp · SMS)
