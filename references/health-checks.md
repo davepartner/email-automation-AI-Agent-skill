@@ -1,103 +1,167 @@
 # Health Checks & Warnings
 
-The Email Automation page must **tell the admin immediately why emails aren't going out**. Show
-prominent banners at the top of every tab, with a one-line reason, an expandable **"how to fix"**, and
-action buttons. Re-check on load, every 60s, and on a manual "Re-check".
+The page should answer one question in plain language: **"Is anything stopping my emails, and what
+exactly do I do about it?"** — and when nothing is wrong, it should say so and get out of the way.
 
-Order of priority: **no transport → scheduler down → paused.**
-
----
-
-## 1. No email transport configured (critical)
-
-**Detect:** the app has no usable mail connection — no SMTP host/credentials and no provider API key
-(SendGrid, Mailgun, Postmark, SES, Resend). Check the app's mail config/env, not the automation tables
-(this system reuses the app's connection).
-
-**Banner:**
-
-> 🛑 **No email sending is configured.** Reminders can't be delivered until the app has an email
-> connection. [Configure] [Send test email]
-
-**How to fix (explain in-app):**
-- This section **reuses the app's existing email setup** — it doesn't add a second connection.
-- Set one of:
-  - SMTP: `MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`,
-    `MAIL_ENCRYPTION`.
-  - Provider API key: `SENDGRID_API_KEY`, `MAILGUN_API_KEY` + `MAILGUN_DOMAIN`, `POSTMARK_TOKEN`,
-    `RESEND_API_KEY`, etc.
-- Or fill the app's built-in **mail settings** page (link it).
-- Then click **Send test email** to confirm.
-
-**Do:** never store secrets in the automation tables; read the app's config. Never send if this check
-fails.
+> **The rule: a checklist, not a wall of red banners.** Check everything you can via the provider API
+> first (`references/provider-api.md`). Only raise a warning when a check actually fails. If all checks
+> pass, show one calm green line: *"Everything is ready — you don't need to do anything."*
 
 ---
 
-## 2. Scheduler / cron not running (critical)
+## The checklist model
+
+Every health item is a row with four parts:
+
+| Part | Example |
+|------|---------|
+| **State** | ✓ done · ● waiting · ! needs you · ? unknown (API unreachable) |
+| **Plain label** | "Email provider connected" |
+| **Human detail** | "Brevo is connected and the sender is verified." |
+| **Action** | A link to the provider, a copyable cron line, or nothing |
+
+Show the rows in a collapsed **"Sending readiness"** panel under the page title. When everything is
+✓, collapse it to a single green pill; when something needs the admin, open it and show only the
+failed rows plus a one-line summary.
+
+Checks, in priority order:
+
+1. **Provider connected** — API key valid (`GET /account` succeeds) or SMTP configured.
+2. **Sender verified** — the from-address is a verified sender (provider API) or the sending domain is
+   authenticated (SPF/DKIM/DMARC).
+3. **Scheduler running** — heartbeat is fresh.
+4. **Automation running** — master switch is on.
+5. **Each channel configured** — push/SMS/WhatsApp only when a sequence uses it.
+
+Cache the API result for 10–15 minutes and re-check on load and on a manual **Re-check** button.
+Never block the page on a slow provider.
+
+---
+
+## Copy that helps, not scares
+
+Write like a helpful colleague. Name the consequence, say who can fix it, and give one action. Keep
+environment variable names and stack details inside a **"Technical details"** disclosure — not in the
+headline.
+
+| Instead of | Write |
+|------------|-------|
+| "No email transport configured. Add BREVO_API_KEY and BREVO_FROM_ADDRESS…" | "Email sending isn't connected yet. Add your provider key in **Settings → Email**, then press Re-check. [Open Brevo API settings]" |
+| "Scheduler is not running. The heartbeat is stale since…" | "Emails are waiting because the website's scheduler hasn't checked in since **Mon 9 Nov, 8:08am**. This is a one-time server setup — send this line to your host, or paste it into cron. [Copy the line] [Ask your host]" |
+| "Sender must be verified in Brevo." | "Brevo hasn't confirmed **support@brand.com** yet. Open Brevo and verify the sender or domain; after that, nothing else is needed. [Open senders]" |
+| "A global unsubscribe, bounce or complaint suppresses the address." | "People who unsubscribe or report spam are removed from every sequence automatically. You don't need to manage that." |
+
+**When all is well:**
+> ✅ **Everything is ready.** Your sequences send automatically between 08:00 and 19:00. There's
+> nothing for you to do.
+
+Do **not** show a warning for a condition the API confirms is fine — for example, a key that exists
+and a sender that is already verified. Show those as ✓ rows in the checklist, not as alerts.
+
+---
+
+## 1. Provider connected
+
+**Detect:** call the provider's account endpoint with the configured key (Brevo `GET /v3/account`,
+SendGrid `GET /v3/user/account`, Mailgun `GET /v4/domains`, Postmark `GET /server`). A 200 means
+connected; a 401/403 means the key is wrong; no key and no SMTP means not configured.
+
+**Pass row:** "Email provider connected — Brevo, plan *{plan}*."
+**Fail copy:** "Email sending isn't connected yet. Add your provider key, then press Re-check."
+**Action:** a deep link to the provider's API-key page (see the links table), plus the app's own
+settings page if it stores mail config.
+
+---
+
+## 2. Sender verified
+
+**Detect:** provider sender/domain endpoints (Brevo `GET /v3/senders`, `GET /v3/senders/domains`;
+SendGrid `GET /v3/verified_senders`; Mailgun domain state; Postmark signature). Match the configured
+from-address. If the provider exposes no such endpoint, check the app's configured sender and treat
+verification as **unknown**, not failed.
+
+**Pass row:** "Sender verified — support@brand.com."
+**Fail copy:** "The provider hasn't confirmed **{sender}** yet. Some emails may be rejected until it
+is verified. Open the provider, confirm the sender or domain, then press Re-check. Nothing else is
+needed. [Open senders]"
+
+---
+
+## 3. Scheduler running
 
 **Detect (heartbeat):** the scheduler writes `email_settings.last_cron_run_at = now()` on every run.
-If it is missing or `now - last_cron_run_at > 10 minutes` (configurable), the scheduler is not running.
+Missing or `now - last_cron_run_at > 10 minutes` (configurable) means it is not running.
 
-**Banner:**
+**Fail copy:**
+> **Emails are waiting.** The website's scheduler hasn't checked in since **{human time}**. It's the
+> small server job that releases queued emails. Send the line below to your host, or paste it into
+> cron — then the queue starts moving on its own. [Copy the line] [Test now]
 
-> 🛑 **The email scheduler hasn't run in {duration}.** Emails are queued but **not being sent**.
-> [Why?] [Run now] [Copy cron command]
+Put the command in a copyable block behind **Technical details**:
 
-**Detailed "why" (expand):** the scheduler is the cron/queue job that picks up due emails every minute.
-It may not be running because:
-- **No cron entry** on the server.
-- **Scheduler/queue worker isn't started** (or was stopped after a crash/deploy/OOM).
-- **Wrong server clock/timezone.**
-- **Permissions** — the cron user can't run the command.
-- **Queue backlog** (if the app uses a queue) — worker not consuming.
-
-**Ways to fix it (show the exact command for the detected stack):**
-
-| Stack | Command / fix |
-|-------|---------------|
-| Laravel | `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1`; register the job in `schedule()`; if queued, run `php artisan queue:work` (or supervisor) |
+| Stack | Command |
+|-------|---------|
+| Laravel | `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1` |
 | Symfony | `* * * * * php /path/bin/console app:email-tick` |
-| Node/Express | `* * * * * cd /app && node scripts/email-worker.js`, or `node-cron` in-process, or a platform cron |
-| Rails | `* * * * * cd /app && bin/rails runner "EmailTicker.tick"`, or Sidekiq + a scheduler |
-| Django | `* * * * * python manage.py email_tick`, or Celery beat |
+| Node/Express | `* * * * * cd /app && node scripts/email-worker.js` |
+| Rails | `* * * * * cd /app && bin/rails runner "EmailTicker.tick"` |
+| Django | `* * * * * python manage.py email_tick` |
 | Platform (Render/Fly/Vercel) | use the platform's **Cron Jobs** feature with the tick command |
 
-Also: a **"Test now"** button runs the tick once (and updates the heartbeat). A **"Copy command"**
-button copies the right cron line. If the app uses a queue, surface **queue depth** too.
+Also offer **Test now** (runs the tick once and updates the heartbeat) and, if the app uses a queue,
+show the queue depth.
+
+Common causes to mention only inside "Why?": no cron entry, worker stopped after a deploy/OOM, wrong
+server clock, permissions, queue backlog.
 
 ---
 
-## 3. Automation paused (warning)
+## 4. Automation paused
 
 **Detect:** `email_settings.master_enabled = false`.
 
-**Banner:**
-
-> ⚠️ **Email Automation is paused.** No emails are being sent. [Review sequences] [Turn on]
-
-This is intentional by default (the system ships paused) — show it as a **warning**, not an error, and
-link straight to the toggle.
+**Copy:** "Email automation is paused. Nothing sends until you turn it on. [Turn on]"
+Show it as a **warning**, not an error — shipping paused is intentional. Never combine it with a red
+transport warning when the transport is fine.
 
 ---
 
-## 4. A channel isn't configured (warning)
+## 5. A channel isn't configured
 
-If a sequence uses push / SMS / WhatsApp but there's no provider or credentials, show:
-*"Push reminders are paused — no provider configured."* → link to **Settings → Channels**. Show the
-status per channel (Configured / Not configured / Off). Existing providers are reused automatically;
-missing ones need credentials.
+If a sequence uses push / SMS / WhatsApp and no provider exists:
+*"Push reminders are paused — no provider configured. [Open Settings → Channels]"*
+Show the per-channel status as **Configured / Not configured / Off**, and reuse an existing provider
+automatically instead of asking for a second one.
+
+---
+
+## Provider links (open in a new tab)
+
+| Provider | API keys | Senders / domains | Billing / plan |
+|----------|----------|-------------------|----------------|
+| Brevo | `https://app.brevo.com/settings/keys/api` | `https://app.brevo.com/settings/senders` | `https://app.brevo.com/account` |
+| SendGrid | `https://app.sendgrid.com/settings/api_keys` | `https://app.sendgrid.com/settings/sender_auth` | `https://app.sendgrid.com/settings/billing` |
+| Mailgun | `https://app.mailgun.com/settings/api_security` | `https://app.mailgun.com/sending/domains` | `https://app.mailgun.com/settings/billing` |
+| Postmark | `https://account.postmarkapp.com/servers` | `https://account.postmarkapp.com/signature_domains` | `https://account.postmarkapp.com/billing` |
+| Resend | `https://resend.com/api-keys` | `https://resend.com/domains` | `https://resend.com/settings/billing` |
+
+Only show the row for the provider actually in use.
+
+---
 
 ## Banner component (consistent)
 
-- **Icon + short title + one-line reason.**
-- **Expandable "How to fix"** with copy-able commands and a link to the relevant settings.
-- **Action buttons** (e.g. Configure, Send test, Run now, Turn on).
-- **Re-check** button + auto-refresh every 60s.
-- **Accessible:** `role="alert"` for critical, `role="status"` for warnings; keyboard reachable.
+- **State icon + short title + one-line, human reason.**
+- **One primary action** (Open provider / Copy the line / Turn on). A secondary **Re-check**.
+- **No env-var lists in the visible copy.** Technical details go in a disclosure.
+- `role="alert"` for a hard stop (cannot send), `role="status"` for warnings; keyboard reachable;
+  44px buttons.
+- Re-check every 60s and on demand; when the issue clears, replace the banner with the green
+  "Everything is ready" line.
 
 ## Hand-off
 
-When the admin fixes an issue, the banner clears on the next re-check. The **"Send test email"** and
-**"Test now"** buttons double as the verification step. Document each fix in the hand-off notes so the
-admin knows where their cron and mail settings live.
+When the admin fixes an issue, the checklist updates on the next re-check — no page reload needed if
+the app polls. The **Send test email** and **Test now** buttons double as verification. Document where
+the cron and provider settings live, and tell the admin explicitly: **if all rows are green, there is
+nothing left to do.**

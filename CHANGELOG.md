@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-11-09 — Sequences and Statistics merged; readiness checklist
+
+- Statistics are no longer a tab: the Sequences tab opens with KPIs, an **emails-per-day** chart, a
+  **sales-per-day** chart and a **provider plan/quota** card (plan, sent, remaining, reset).
+- Admin UI is now three tabs: **Sequences · Users & recipients · Settings**.
+- Health checks are a humanized **readiness checklist**: verify provider/sender via API, show ✓ rows,
+  and only warn for what actually fails. When clean, show "Everything is ready — nothing for you to
+  do." Copy avoids env-var walls and gives one action plus a provider link.
+- New `references/provider-api.md` (Brevo/SendGrid/Mailgun/Postmark/Resend): account, sender
+  verification, plan/credits, stats, caching and graceful "unknown".
+- `admin-ui.md`, `admin-design-laws.md`, `SKILL.md` and `quickstart.md` updated.
+
+
 ## 2026-11-09 — UI/UX standard extended to tables and emails
 
 - Added `references/email-design-laws.md`: the 20 laws applied to the email canvas (600px, 16px body,

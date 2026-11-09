@@ -19,14 +19,16 @@ Load from that skill:
 
 | Surface / decision | Law(s) | What it means |
 |--------------------|--------|----------------|
-| Four tabs: Sequences · Users & recipients · Statistics · Settings | **Miller's** + **Hick's** | ≤4 top-level choices, grouped by job |
+| Three tabs: Sequences (with stats) · Users & recipients · Settings | **Miller's** + **Hick's** | ≤3 top-level choices; statistics sit at the top of Sequences, not a tab |
 | One primary action per view | **Hick's** + **Occam's** | fewer decisions on each screen |
 | Start/Pause as the card's one toggle | **Von Restorff** + **Similarity** | a single, consistent primary control |
 | Delete behind `⋯` + type-"delete" modal | **Fitts's** (gated destructive) + **Postel's** (confirm) | destructive actions are distant and confirmed |
 | Details in a slide-over drawer | **Hick's** + progressive disclosure | don't dump every field on the list |
 | Health banners only when there's a problem | **Von Restorff** + **Occam's** | signal only what matters; no clutter |
 | Skeleton loaders for tables/charts | **Doherty** + **Closure** | feedback <400ms; signal loading |
-| Stats chart (day/week/month) | **Goal-Gradient** + **Continuity** | show trend; align axes |
+| Stats at the top of Sequences (KPIs, two charts, plan/quota) | **Goal-Gradient** + **Continuity** + **Serial Position** | answer "is this working?" first; share one date axis |
+| Emails/day and sales/day charts | **Continuity** + **Occam's** | same x-axis, one idea per chart, one accent, currency formatted |
+| Plan/quota progress bar | **Goal-Gradient** + **Tesler's** | derive the numbers from the provider API; never ask |
 | Users table search + pagination (100) | **Hick's** + **Miller's** | bounded choices; chunked data |
 | Caret expands a user's emails | **Closure** + **Common Region** | revealed content, visually grouped |
 | Email editor preview / test-send | **Peak-End** + **Aesthetic-Usability** | a polished, satisfying final step |
@@ -89,8 +91,10 @@ currency formatted with the app's symbol.
 
 ```
 Trace:
-- Decision: 4 tabs (Sequences · Users & recipients · Statistics · Settings)
-  → Law: Miller's Law (≤4 chunks) + Hick's Law (fewer top-level choices)
+- Decision: 3 tabs (Sequences with stats · Users & recipients · Settings)
+  → Law: Miller's Law (≤3 chunks) + Hick's Law (fewer top-level choices)
+- Decision: emails/day and sales/day charts share one date axis at the top of Sequences
+  → Law: Continuity (aligned axes) + Goal-Gradient (progress visible) + Occam's Razor (one idea each)
 - Decision: Delete only via ⋯ menu + type-"delete" confirmation modal
   → Law: Fitts's Law (destructive gated) + Postel's Law (explicit confirm)
 - Decision: step/user details open in a slide-over drawer; Advanced collapsed

@@ -17,8 +17,9 @@ The minimal path to a working Email Automation section. Read the other reference
    Use `examples/worker.mjs` as the tested decision core.
 5. **Sequences** (`sequences.md`) — start with the default 8 + platform-derived ones; set `kind`
    (`marketing`/`transactional`), priority, and discounts (0% = hidden).
-6. **Admin UI** (`admin-ui.md`) — 4 tabs; health banners; **start / pause / delete** (type `delete`);
-   users search / cancel one email / exclude; stats; settings. Run the UI/UX audit on the page **and
+6. **Admin UI** (`admin-ui.md`) — **3 tabs** (Sequences · Users & recipients · Settings); Sequences
+   opens with KPIs, emails/day + sales/day charts and the provider plan/quota; a humanized readiness
+   checklist; **start / pause / delete** (type `delete`); users search / cancel one email / exclude. Run the UI/UX audit on the page **and
    every table** (`admin-design-laws.md`): alignment, 44px actions, responsive columns, empty/loading/
    error states.
 7. **Templates** (`wysiwyg.md` + `examples/render.mjs`) — **reuse an existing editor if present**;

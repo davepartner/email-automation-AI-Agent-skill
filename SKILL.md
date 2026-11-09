@@ -178,24 +178,27 @@ the ones the platform can detect and act on (`references/sequences.md`).
 
 ## Admin surface (what the admin gets)
 
-- **Calm, uncluttered layout** — ≤4 tabs, one primary action per view, details in a drawer, secondary/
-  destructive actions in an overflow (`⋯`) menu, advanced settings collapsed, health banners only when
-  needed.
-- **Health banners** at the top of every tab (only when there's a problem): **no email transport
-  configured**, **scheduler/cron not running** (with a detailed why + how-to-fix), and **automation
-  paused**. See `references/health-checks.md`.
+- **Calm, uncluttered layout** — ≤3 tabs, one primary action per view, details in a drawer, secondary/
+  destructive actions in an overflow (`⋯`) menu, advanced settings collapsed, and a **checklist** that
+  stays quiet when everything is fine.
+- **Sending readiness checklist**, not a wall of warnings: verify the provider and sender through the
+  provider API (`references/provider-api.md`), then show ✓ rows for what is done and a plain-language
+  action only for what fails. When everything passes, collapse it to a green
+  **"Everything is ready — nothing for you to do."** See `references/health-checks.md`.
 - **Email Automation** menu (top-level), with tabs:
-  - **Sequences** — per-sequence **Start / Pause / Delete** (delete is confirmed + soft-deleted/
-    restorable, tucked into `⋯`), delays, discounts, stop conditions, a **WYSIWYG editor (reuse the
-    app's existing one if present)**, and **add / reorder / delete steps**.
+  - **Sequences** — opens with the performance block (KPIs, **emails sent per day**, **sales from
+    email per day**, and the **provider plan/quota** card), then the list. Each sequence has
+    **Start / Pause / Delete** (confirmed + soft-deleted, tucked into `⋯`), delays, discounts, stop
+    conditions, a **WYSIWYG editor (reuse the app's existing one if present)**, and **add / reorder /
+    delete steps**.
   - **Users & recipients** — search a user by email; expand their **sequence of emails** with the down
     caret; **cancel a specific email** or **exclude the user completely**; plus the full sent log
     **paginated by 100** with *when* and *why*.
-  - **Statistics** — of users who received a reminder, how many converted, revenue, chart by
-    **day / week / month**.
   - **Settings** — sender (from-name/from-email/reply-to/physical address), master pause, caps,
-    quiet hours, and a **Channels** panel (email · push · WhatsApp · SMS): detect/reuse the app's
-    provider or add API keys, test-send, enable/disable.
+    quiet hours, attribution window, and a **Channels** panel (email · push · WhatsApp · SMS):
+    detect/reuse the app's provider or add API keys, test-send, enable/disable.
+  - **Statistics are not a tab** — they live at the top of Sequences so the admin sees performance and
+    the list in one place.
 - **Admin-only tables** at the bottom of **product** and **checkout** pages:
   - Tabs **Purchased** / **Abandoned** — clearly marked *"Admin only"*.
   - Columns: email (→ user panel), registration/login/abandon datetimes, would-have-paid amount,
@@ -221,7 +224,8 @@ Full UI spec: `references/admin-ui.md`.
    sequence shortlist** derived from the platform's purpose.
 2. New tables/migrations + the scheduler + send worker (additive).
 3. The event hooks (observe-only).
-4. The admin "Email Automation" page + tabs + statistics chart, including a **free WYSIWYG editor**,
+4. The admin "Email Automation" page with **three tabs**, a performance block at the top of Sequences
+   (KPIs, emails/day, sales/day, provider plan/quota), including a **free WYSIWYG editor**,
    **add / reorder / delete steps**, a **user search + per-email cancel / exclude**, and **health
    warnings** (paused, cron not running, no mail transport).
 5. The admin-only purchased/abandoned tables, designed with the table laws.
@@ -249,7 +253,9 @@ Full UI spec: `references/admin-ui.md`.
   (Audit → Trace → checklist).
 - `references/email-design-laws.md` — the 20 laws applied to the email canvas, hierarchy, CTA,
   contrast, mobile, dark mode, and in-email tables (Trace → checklist).
-- `references/health-checks.md` — pause / cron-not-running / no-transport warnings with fix guidance.
+- `references/health-checks.md` — the humanized readiness checklist, when to warn, and exact copy.
+- `references/provider-api.md` — verify account/sender, read plan, quota and reset via the provider
+  API; cache and degrade to "unknown" instead of warning when unreachable.
 - `references/channels.md` — multi-channel (email · push · WhatsApp · SMS), detection, consent, limits.
 - `references/opt-in-prompts.md` — when and how to ask users to enable push/SMS/WhatsApp.
 - `references/wysiwyg.md` — reuse an existing editor, else add one; email-safe pipeline.

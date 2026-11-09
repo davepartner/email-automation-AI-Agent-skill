@@ -20,17 +20,17 @@ skill isn't available, the same rules apply inline there.)
 
 Add one top-level menu item: **"Email Automation"** (mail icon), placed near other management items.
 
-Tabs: **Sequences · Users & recipients · Statistics · Settings**. *(Channels live inside Settings —
-not a fifth tab.)*
+Tabs: **Sequences · Users & recipients · Settings**. *(Statistics live at the top of Sequences — not a
+separate tab. Channels live inside Settings — not a fourth tab.)*
 
 ---
 
 ## Information architecture (keep it uncluttered)
 
-- **Four tabs max:** Sequences · Users & recipients · Statistics · Settings. Nothing else in the
-  top-level nav.
-- **One primary action per view** (Sequences → "Add step" / "Edit"; Users → search; Statistics → time
-  range; Settings → "Save").
+- **Three tabs max:** Sequences · Users & recipients · Settings. Statistics sit inside Sequences, above
+  the list. Nothing else in the top-level nav.
+- **One primary action per view** (Sequences → "Add step" / "Edit"; Users → search; Settings →
+  "Save"). The statistics time range is a filter, not a primary action.
 - **Progressive disclosure:** the list stays scannable; details open in a **side drawer**, not a page
   that shows everything at once. Advanced settings collapse under "Advanced".
 - **Overflow menu (`⋯`) per row/card** for secondary actions (Start/Pause, Duplicate, Statistics,
@@ -62,6 +62,32 @@ Re-check on load + every 60s + a manual "Re-check".
 ---
 
 ## Tab 1 — Sequences
+
+### At the top: performance, charts and the sending plan
+
+The Sequences tab opens with the answer to "is this working?" — before the list of sequences.
+
+1. **Headline metrics** (last 30 days, time-range toggle: 7 / 30 / 90 days):
+   reminders sent · recipients · **converted** · **conversion rate** · **attributed revenue**.
+   Attribute a conversion when the user purchases within the admin-set window (default **7 days**).
+   Label it as attribution, not causation, and state the window.
+2. **Two charts, one idea each** (stacked, full width, 44px legend targets):
+   - **Emails sent per day** — a bar chart from the sent log (`email_sent`), one bar per day, with
+     scheduled-but-not-sent shown as a lighter stacked segment. No dual axis.
+   - **Sales from email per day** — a line/bar of attributed revenue per day, currency formatted
+     (`₦`, `$`, …), same date axis as the sent chart so the reader can compare them vertically.
+   Keep one accent colour, accessible labels, a tooltip with the exact number, and a visible empty
+   state ("No emails sent in this range yet").
+3. **Sending plan / quota** — read from the provider API when available (see
+   `references/provider-api.md`): plan name, emails sent in the current period, **remaining credits**,
+   and the reset date. Show a progress bar (`sent / allowance`) and a link to the provider's billing
+   page. If the API cannot be reached, show the app's own sent count and a "Check provider" link —
+   never invent a quota.
+4. **Per-sequence breakdown table** (sent, converted, rate, revenue) with the table laws from
+   `admin-design-laws.md`.
+
+This replaces a separate Statistics tab: the admin sees performance and the sequence list in one
+place, with one scroll and no tab switch.
 
 A calm, scannable list of sequences (the default 8 + any platform-derived ones). Each is a **card**
 showing: name, **status badge** (Running / Paused / Off), and counts (enrolled · sent · converted).
@@ -146,20 +172,7 @@ The full sent log, **paginated by 100**:
 - Empty state: "No emails yet — turn on a sequence to start."
 - The **caret in the product/checkout admin tables** links here to manage the same user.
 
-## Tab 3 — Statistics (conversion attribution)
-
-The payoff: **do reminders convert?**
-
-- For every reminder sent, attribute a conversion if the user purchases within an admin-set window
-  (default **7 days**).
-- Headline metrics: reminders sent · recipients · **converted** · **conversion rate** · **attributed
-  revenue**.
-- **Chart** of conversions + revenue by **day / week / month** (a toggle). Line/bar, accessible labels,
-  tooltips. One series "reminders attributed", one "revenue".
-- Per-sequence breakdown table (sent, converted, rate, revenue).
-- Make clear it's **attribution**, not causation, and state the attribution window.
-
-## Tab 4 — Settings
+## Tab 3 — Settings
 
 - **Master switch** (big, obvious): *Email Automation is PAUSED / ON*. Ships **PAUSED**.
 - **Sender:** from-name, from-email (branded domain), reply-to, physical mailing address.
