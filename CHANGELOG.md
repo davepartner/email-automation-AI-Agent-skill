@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-09 — Tab DOM contract
+
+- `admin-ui.md`: panes must be direct siblings inside one `.tab-content`; a pane outside it (or a
+  nested second `.tab-content`) leaves the previous tab visible and appends below. Notes the stray-
+  `</div>` cause and the flat-pane rule.
+
+
 ## 2026-11-09 — Sequences and Statistics merged; readiness checklist
 
 - Statistics are no longer a tab: the Sequences tab opens with KPIs, an **emails-per-day** chart, a

@@ -23,6 +23,13 @@ Add one top-level menu item: **"Email Automation"** (mail icon), placed near oth
 Tabs: **Sequences · Users & recipients · Settings**. *(Statistics live at the top of Sequences — not a
 separate tab. Channels live inside Settings — not a fourth tab.)*
 
+**Tab DOM contract:** every pane must be a **direct sibling inside the same `.tab-content`** (or use
+the framework's router). Never place a pane outside that container, and never wrap sibling panes in a
+second `.tab-content`. Bootstrap's tab plugin only hides the direct siblings of the target pane, so an
+orphan pane appends below the previous tab instead of replacing it — the exact bug seen when a stray
+`</div>` in a partial closed the container early. Keep the panes flat; nest tabs only *inside* one
+pane.
+
 ---
 
 ## Information architecture (keep it uncluttered)
