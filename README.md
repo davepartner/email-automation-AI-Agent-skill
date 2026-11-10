@@ -1,4 +1,4 @@
-# Email Automation — AI Agent Skill
+# 📧 Email Automation — AI Agent Skill
 
 > **Ask your AI agent to use this skill to create email automation for your product — to improve sales
 > and user returns.** One sentence is all it takes, and it builds out an elaborate, clean Email
@@ -30,22 +30,30 @@ nothing breaks and nothing sends until you say so.
 
 | Piece | What the admin gets |
 |-------|---------------------|
-| **Sequences** | 8 lifecycle sequences, each on/off, with editable delays, discounts, and copy |
-| **Template editor** | a **free, self-hosted WYSIWYG editor** (TinyMCE Community; or Quill/TipTap/Summernote/GrapesJS) to edit each email body — email-safe HTML, merge tokens, preview + test-send |
-| **Editable sequences** | admin can **add / reorder / delete steps**; a new step also schedules for active enrolments |
-| **Sequence controls** | **Start / Pause / Delete** each sequence — delete requires typing **`delete`** in a confirmation modal, then soft-deletes (restorable) |
-| **Clean admin** | calm, uncluttered layout — ≤4 tabs, one primary action per view, details in drawers, secondary actions in an overflow menu |
-| **Designed with the UI/UX laws skill** | the page is built under `ui-ux-20-laws` — every decision (tabs, targets, drawers, states) is mapped to a law, with a Trace block + pre-ship checklist |
-| **Platform-aware sequences** | scouts your app's purpose and adds the reminders that fit — **email verification, profile completion, onboarding, KYC, billing/trial, booking, renewal**… |
-| **Multi-channel** | **email · push · WhatsApp · SMS** — reuses existing providers or lets the admin add API keys; users opt in per channel |
-| **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
-| **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
-| **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
-| **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |
-| **Statistics** | of those who got reminders, how many converted + revenue, charted by day/week/month |
-| **Settings** | sender (from-name/email, reply-to, address), master pause, caps, quiet hours |
-| **Admin-only tables** | on **product & checkout** pages: *Purchased* / *Abandoned* — email → profile, phone → call, caret → emails sent/scheduled. Disable-able from Settings |
-| **Safety** | ships **paused**, global kill switch, no change to existing flows, reuse the app's email connection |
+| 📨 **Sequences** | 9 lifecycle sequences, each on/off, with editable delays, discounts, and copy |
+| ✍️ **Template editor** | a **free, self-hosted WYSIWYG editor** (TinyMCE Community; or Quill/TipTap/Summernote/GrapesJS) to edit each email body — email-safe HTML, merge tokens, preview + test-send |
+| 🧩 **Editable sequences** | admin can **add / reorder / delete steps**; a new step also schedules for active enrolments |
+| ▶️ **Sequence controls** | **Start / Pause / Delete** each sequence — delete requires typing **`delete`** in a confirmation modal, then soft-deletes (restorable) |
+| 🧭 **Clean admin** | calm, uncluttered layout — ≤3 tabs, one primary action per view, details in drawers, secondary actions in an overflow menu |
+| 🎨 **Designed with the UI/UX laws skill** | the page is built under `ui-ux-20-laws` — every decision (tabs, targets, drawers, states) is mapped to a law, with a Trace block + pre-ship checklist |
+| 🧠 **Platform-aware sequences** | scouts your app's purpose and adds the reminders that fit — **email verification, profile completion, onboarding, KYC, billing/trial, booking, renewal**… |
+| 📣 **Multi-channel** | **email · push · WhatsApp · SMS** — reuses existing providers or lets the admin add API keys; users opt in per channel |
+| 💰 **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
+| 🩺 **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
+| 👤 **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
+| 🗂️ **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |
+| 📊 **Statistics** | of those who got reminders, how many converted + revenue, charted by day/week/month |
+| ⚙️ **Settings** | sender (from-name/email, reply-to, address), master pause, caps, quiet hours |
+| 🛒 **Admin-only tables** | on **product & checkout** pages: **Leads** / **Paid** — email → profile, phone → call, caret → emails sent/scheduled. Disable-able from Settings |
+| 🛡️ **Safety** | ships **paused**, global kill switch, no change to existing flows, reuse the app's email connection |
+
+**Icons make it feel finished.** The page ships with a **single, consistent icon family** — it reuses
+your app's existing set (Lucide/Heroicons/Material/Phosphor) or falls back to **Lucide**. Icons label the
+nav, tabs, sequence actions (`▶` start, `⏸` pause, `✎` edit, `🗑` delete), statuses (`✓` sent, `⏱`
+scheduled, `✕` cancelled, `⚠` failed), the Leads/Paid tabs, and each channel (`📧` `🔔` `💬` `📱`). Every
+icon-only control keeps a 44px target and an accessible name, and icons never replace the label on a
+primary or destructive action. A ready-to-use sprite is in `examples/icons.svg`; the rules and full map
+are in `references/iconography.md`. **See it rendered:** `examples/admin-preview.html`.
 
 ---
 
@@ -53,15 +61,15 @@ nothing breaks and nothing sends until you say so.
 
 | # | Sequence | Trigger | Timing | Discount |
 |---|----------|---------|--------|----------|
-| 1 | **Welcome / activate** | Registration | 0h → 24h → 72h | 0% |
-| 2 | **Registered, never logged in** | Registered + no login | 1h → 24h → 72h | 0% |
-| 3 | **Logged in, no purchase/use** | Inactive after login | 1h → 24h → 5d | 0% |
-| 4 | **Abandoned cart / checkout / product** | Cart/checkout/product, no purchase | **1h (no discount) → 24h social proof → 48–72h urgency + discount** | up to 10% on step 3 |
-| 5 | **Post-purchase review** | Purchase (product-type aware) | next day → 2 weeks | 0% |
-| 6 | **Upsell / cross-sell** | Purchase, other products exist | after value moment (3–7d) | optional |
-| 7 | **Win-back** | Inactive 30/60/90d | neutral → value → "we'll stop" | optional |
-| 8 | **Replenishment** | Consumable product | ~day 45–60 | optional |
-| 9 | **Payday re-engage** | Pending product lead ≥ 7 days | 27th → last day → 2nd | optional |
+| 1 | 👋 **Welcome / activate** | Registration | 0h → 24h → 72h | 0% |
+| 2 | 🔑 **Registered, never logged in** | Registered + no login | 1h → 24h → 72h | 0% |
+| 3 | 😴 **Logged in, no purchase/use** | Inactive after login | 1h → 24h → 5d | 0% |
+| 4 | 🛒 **Abandoned cart / checkout / product** | Cart/checkout/product, no purchase | **1h (no discount) → 24h social proof → 48–72h urgency + discount** | up to 10% on step 3 |
+| 5 | ⭐ **Post-purchase review** | Purchase (product-type aware) | next day → 2 weeks | 0% |
+| 6 | 🚀 **Upsell / cross-sell** | Purchase, other products exist | after value moment (3–7d) | optional |
+| 7 | 🔁 **Win-back** | Inactive 30/60/90d | neutral → value → "we'll stop" | optional |
+| 8 | 📦 **Replenishment** | Consumable product | ~day 45–60 | optional |
+| 9 | 💸 **Payday re-engage** | Pending product lead ≥ 7 days | 27th → last day → 2nd | optional |
 
 **Payday is a nurture sequence** — per product, runs alongside the cart reminder, and shares the
 one-email-per-day cap so it never clashes. On purchase the user moves **Leads → Paid** and enters the
@@ -84,11 +92,11 @@ product** (shown as "Manually exited this sequence" beside the caret).
 
 ---
 
-## Channels — email, push, WhatsApp, SMS
+## 📣 Channels — email, push, WhatsApp, SMS
 
-Reminders go out on **email, push notifications, WhatsApp, and SMS**. The skill **detects and reuses**
-whatever the app already has (FCM/APNs/OneSignal, Twilio/Vonage, WhatsApp Cloud API). If a channel is
-missing, the admin adds its API key on **Settings → Channels** and sends a test.
+Reminders go out on **📧 email, 🔔 push notifications, 💬 WhatsApp, and 📱 SMS**. The skill **detects and
+reuses** whatever the app already has (FCM/APNs/OneSignal, Twilio/Vonage, WhatsApp Cloud API). If a
+channel is missing, the admin adds its API key on **Settings → Channels** and sends a test.
 
 Users are asked to opt in at the right moment — the push permission prompt, or a verified phone number
 with an unchecked consent box for SMS/WhatsApp. Only opted-in channels are used, and email stays the
@@ -96,17 +104,17 @@ always-available fallback. Each channel has its own consent, suppression, limits
 
 ## What makes the emails good
 
-- **Personal, from one person** — `Dave from NoteVault`, a monitored reply-to, references the exact
+- ✍️ **Personal, from one person** — `Dave from NoteVault`, a monitored reply-to, references the exact
   product. Example:
 
   > *Hi Dave, I noticed you wanted to buy the Sony Xmax TV but haven't completed the payment. Is
   > anything blocking you? You can finish here — and I've added 10% off if you complete it in the next
   > 24 hours.*
 
-- **One clear CTA** and a **"contact admin" link in every email**.
-- **Deliverability-safe**: SPF/DKIM/DMARC, branded domain, HTML + plain-text, no spam trigger words,
+- 🎯 **One clear CTA** and a **"contact admin" link in every email**.
+- 📬 **Deliverability-safe**: SPF/DKIM/DMARC, branded domain, HTML + plain-text, no spam trigger words,
   unsubscribe + physical address (CAN-SPAM/GDPR).
-- **Client-agnostic**: table-based HTML, inline CSS, ~600px, alt text, dark-mode aware.
+- 📱 **Client-agnostic**: table-based HTML, inline CSS, ~600px, alt text, dark-mode aware.
 
 ---
 
@@ -125,11 +133,18 @@ references/
 ├── sending-and-compliance.md         # cron, caps, transactional vs marketing, rate limits, i18n
 ├── compliance.md                     # consent, signed unsubscribe, preference center, webhooks
 ├── admin-ui.md                       # dashboard, log (100/page), stats chart, admin tables, WYSIWYG
+├── admin-design-laws.md              # the admin page + tables mapped to the 20 laws
+├── email-design-laws.md              # the 20 laws applied to the email canvas
+├── iconography.md                    # one icon family, sizes, accessibility, full page icon map
 ├── health-checks.md                  # paused / cron / transport warnings
 └── reference-implementation.md       # engine pseudocode + SQL (locking, reaper, attribution)
 examples/
 ├── worker.mjs                        # executable scheduler/worker core
 ├── worker.test.mjs                   # tests: idempotency, consent, holdout, precedence, exclusions…
+├── schedule.mjs                      # calendar (payday) math: 27th / last day / 2nd
+├── leads.mjs                         # per-product lead → paid transition
+├── icons.svg                         # ready Lucide-style icon sprite
+├── admin-preview.html                # rendered, self-contained preview of the admin page + icons
 ├── render.mjs                        # Mustache email renderer (0%-discount conditional)
 ├── render.test.mjs                   # tests the 0%-discount rule
 ├── data-model.md                     # additive DB schema
@@ -157,13 +172,15 @@ SKILL.md, and build the Email Automation section into this app:
    products / cart / checkout / orders / user models. Produce a one-screen integration plan and show
    me it BEFORE writing code. If there is no admin panel, ask me whether to create one.
 2. Build it additively (new tables/routes only) with a feature flag, and SHIP IT PAUSED.
-3. Add the "Email Automation" admin menu with tabs: Sequences · Recipients (100/page) · Statistics
-   (conversion + revenue chart by day/week/month) · Settings (sender, caps, pause).
+3. Add the "Email Automation" admin menu with tabs: Sequences (with stats) · Users & recipients ·
+   Settings (sender, channels, caps, pause).
 4. Wire the sequences (welcome, no-login, inactive, abandoned cart, post-purchase review, upsell,
-   win-back, replenishment) with personal copy, stop conditions, and discounts (0% = no mention).
-5. Add admin-only Purchased/Abandoned tables to product & checkout pages, hide-able from Settings.
-6. Reuse the existing email connection; no mass email; respect caps + unsubscribe.
-7. Give me a preview/test-send and a rollback doc, then ask if you should turn it on.
+   win-back, replenishment, payday re-engagement) with personal copy, stop conditions, and discounts
+   (0% = no mention).
+5. Add admin-only Leads/Paid tables to product & checkout pages, hide-able from Settings.
+6. Use one consistent icon set (reuse mine, else Lucide) across tabs, actions, statuses and channels.
+7. Reuse the existing email connection; no mass email; respect caps + unsubscribe.
+8. Give me a preview/test-send and a rollback doc, then ask if you should turn it on.
 ```
 
 ---
@@ -252,3 +269,7 @@ email, account setup reminder, activation reminder.
 AI agent skill, Claude Code skill, Claude skill, Cursor rules, AI coding rules, agent prompt, system
 prompt, LLM rules, agentic development, developer skill, engineering skill, product skill, growth
 skill, lifecycle marketing.
+
+Icon system, admin icons, iconography, Lucide icons, Heroicons, consistent icon family, accessible
+icons, aria-label icon button, 44px icon target, icon sprite, SVG sprite, icon-only button, status
+icons, channel icons.

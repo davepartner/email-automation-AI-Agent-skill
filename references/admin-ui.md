@@ -18,10 +18,10 @@ skill isn't available, the same rules apply inline there.)
 
 ## Navigation
 
-Add one top-level menu item: **"Email Automation"** (mail icon), placed near other management items.
+Add one top-level menu item: **"Email Automation"** (`mail` icon), placed near other management items.
 
-Tabs: **Sequences · Users & recipients · Settings**. *(Statistics live at the top of Sequences — not a
-separate tab. Channels live inside Settings — not a fourth tab.)*
+Tabs: **`list` Sequences · `users` Users & recipients · `settings` Settings**. *(Statistics live at the
+top of Sequences — not a separate tab. Channels live inside Settings — not a fourth tab.)*
 
 **Tab DOM contract:** every pane must be a **direct sibling inside the same `.tab-content`** (or use
 the framework's router). Never place a pane outside that container, and never wrap sibling panes in a
@@ -45,6 +45,38 @@ pane.
 - **Search & filters** live in the list toolbar, collapsed under a "Filter" button when not needed.
 - **Health banners only when there's a problem** — hide them when all checks pass so the page stays calm.
 - **One visual language:** one button style, one badge style, one drawer pattern throughout.
+
+---
+
+## Iconography (beautiful, consistent, accessible)
+
+Icons are what make the page feel finished — they let the admin scan tabs, actions, and statuses at a
+glance. **Full rules + the complete icon map live in `references/iconography.md`**; a ready-to-use
+Lucide-style sprite is in `examples/icons.svg`.
+
+- **Reuse the app's icon set first** (Lucide/Heroicons/Material/Phosphor or the admin theme's icons).
+  Never add a second family. If the app has none, use **Lucide**.
+- **One family, one stroke, one scale:** 16px inline meta · 20px buttons/menu items · 24px tabs/nav.
+  Icons inherit `currentColor`; accent colour only on the primary action and focus ring.
+- **Icons never replace labels** on primary/destructive actions. Pair a decorative icon with its text
+  label (`aria-hidden="true"`) — e.g. `▶ Start`, `⏸ Pause`, `✎ Edit`, `🗑 Delete`.
+- **Icon-only controls** (the `⋯` menu, the caret, cancel-a-scheduled-email) need an `aria-label`, a
+  tooltip, and a **44×44px** hit area.
+- **Status is never colour/icon alone** — always text + icon (e.g. `✓ Sent`, `⏱ Scheduled`, `✕ Cancelled`,
+  `⚠ Failed`).
+
+Concrete placements on this page (see the map for the rest):
+
+| Where | Icons |
+|-------|-------|
+| Nav item | `mail` **Email Automation** |
+| Tabs | `list` Sequences · `users` Users & recipients · `settings` Settings |
+| Sequences header | `bar-chart` / `trending-up` stats · `gauge` plan/quota |
+| Sequence card | `play` Start · `pause` Pause · `power` Off; `⋯` → `pencil` Edit · `copy` Duplicate · `bar-chart` Statistics · `trash` Delete |
+| Health banners | `server` transport · `clock` scheduler · `pause` paused · `refresh` Re-check |
+| Users caret | `chevron-down` to expand; badge `log-out` **Manually exited this sequence** |
+| Leads / Paid tabs | `inbox` Leads · `shopping-bag` Paid (purchase badge `check`) |
+| Channels | `mail` email · `bell` push · `message-circle` WhatsApp · `smartphone` SMS |
 
 ---
 
@@ -102,10 +134,10 @@ Clicking the card opens the **edit drawer** — it does **not** expand everythin
 
 ### Per-sequence controls (Start · Pause · Delete)
 
-- **Start / Pause** — one clear toggle on the card. Starting a paused sequence schedules only *future*
-  steps (never back-fills past ones).
-- **Overflow `⋯` menu** for secondary actions: Edit · Duplicate · View statistics · **Delete**. Never a
-  row of 4+ buttons.
+- **Start / Pause** — one clear toggle on the card (`play` / `pause`). Starting a paused sequence
+  schedules only *future* steps (never back-fills past ones).
+- **Overflow `⋯` menu** for secondary actions: `pencil` Edit · `copy` Duplicate · `bar-chart` View
+  statistics · `trash` **Delete**. Never a row of 4+ buttons.
 - **Delete** is destructive and gated by a **confirmation modal**. It explains *"This cancels all
   scheduled emails for this sequence and removes it. Users already emailed are unaffected; the sent log
   is kept. This can't be undone."* The admin must **type the word `delete`** (case-insensitive) to
@@ -151,10 +183,11 @@ Two jobs: **find a user and control what they receive**, and **audit the log**.
 
 - **Search box:** "Find a user by email" → results → open the **user panel**.
 - **User panel:** email (→ profile), phone, registration/login dates, consent, holdout flag.
-- **Their emails, grouped by sequence** — each step with status (`sent` · `scheduled` · `cancelled` ·
-  `failed`) and its date. A **down caret** on each sequence expands the full ordered list of emails
-  going out. **If the user opted out, a badge beside the caret reads "Manually exited this sequence"**,
-  and the expanded view shows *"Exited — unsubscribed"* (or *"Exited — purchased"* if they bought).
+- **Their emails, grouped by sequence** — each step with status (`✓ sent` · `⏱ scheduled` · `✕ cancelled` ·
+  `⚠ failed`) and its date. A **down caret** (`chevron-down`) on each sequence expands the full ordered
+  list of emails going out. **If the user opted out, a `log-out` badge beside the caret reads "Manually
+  exited this sequence"**, and the expanded view shows *"Exited — unsubscribed"* (or *"Exited —
+  purchased"* if they bought).
 - **Cancel one email:** a "Cancel" action on any **scheduled** step → `email_scheduled.status =
   'cancelled'` (confirm). Also record a per-step exclusion (`email_step_exclusions`) so it isn't
   re-scheduled.
@@ -174,7 +207,7 @@ The full sent log, **paginated by 100**:
 |--------|-------|
 | User | email — **clickable → user profile / user panel** |
 | Sequence / step | e.g. "Abandoned cart · Step 2" |
-| Status | sent · scheduled · cancelled · failed |
+| Status | `✓` sent · `⏱` scheduled · `✕` cancelled · `⚠` failed (icon + text) |
 | When | sent_at or scheduled due_at (user-local time) |
 | Why | the triggering event + stop/cancel reason |
 
@@ -194,8 +227,9 @@ The full sent log, **paginated by 100**:
 
 ### Channels (email · push · WhatsApp · SMS)
 
-A per-channel panel inside Settings. For each channel show a status badge (**Configured / Not
-configured / Off**) and:
+A per-channel panel inside Settings. One row per channel, each with its icon — `mail` email · `bell`
+push · `message-circle` WhatsApp · `smartphone` SMS — and a status badge (**Configured / Not configured
+/ Off**):
 
 - **Detected provider** — if the app already has one (FCM/APNs/OneSignal, Twilio/Vonage, WhatsApp Cloud
   API), show it and reuse it. **Don't add a second provider for the same channel.**
@@ -217,8 +251,8 @@ only."*).
 
 Two tabs:
 
-- **Leads** — users who reached this cart/checkout but haven't purchased (the `lead` stage).
-- **Paid** — users who bought this product.
+- **`inbox` Leads** — users who reached this cart/checkout but haven't purchased (the `lead` stage).
+- **`shopping-bag` Paid** — users who bought this product.
 
 When a lead purchases, they **move from Leads to Paid**, that lead's scheduled reminders are cancelled,
 and they're enrolled in the **paid-product** sequences (review/upsell). The row's caret reflects the new
@@ -235,12 +269,12 @@ Columns:
 | Purchased at | datetime (Paid tab) |
 | Would have paid | amount + currency |
 | Phone | **clickable → `tel:` call** (if present) |
-| Emails ▾ | caret expands the sequence (**active** / **exited-unsubscribed** / **exited-purchased**) and links to the user panel to cancel one or exclude the user |
+| Emails ▾ | `chevron-down` caret expands the sequence (**active** / **exited-unsubscribed** / **exited-purchased**) and links to the user panel to cancel one or exclude the user |
 
 - The caret opens a small timeline: sent (with date) and scheduled (with due date).
 - Respect privacy: only aggregate the data the admin already has access to.
 - **Performance:** these tables can be expensive to compute per page view — paginate, cache (short
-  TTL), and precompute aggregates. Never run an unbounded `purchased/abandoned` query on every product
+  TTL), and precompute aggregates. Never run an unbounded `leads/paid` query on every product
   page hit.
 - **Access control:** require the app's **admin permission** (not just "logged in"), and **audit** who
   viewed. This is PII (email + phone) on a normal page.
@@ -268,7 +302,7 @@ When disabled, the table disappears from product/checkout pages but the automati
   Delete button enables.
 - **Responsive**: tables scroll or collapse to cards on mobile; charts resize.
 - **Accessible**: labelled inputs, focus rings, keyboard-navigable tabs, chart data mirrored as a table
-  for screen readers.
+  for screen readers, icon-only controls with `aria-label` + 44px targets (`references/iconography.md`).
 - **Seamless**: reuse the app's admin layout, sidebar, buttons, and colors — it should look native.
 
 ### Keep it uncluttered (do / don't)

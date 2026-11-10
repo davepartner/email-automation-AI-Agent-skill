@@ -15,13 +15,14 @@ The minimal path to a working Email Automation section. Read the other reference
 4. **Worker + scheduler** (`reference-implementation.md` §3–4) — claim due rows atomically
    (`FOR UPDATE SKIP LOCKED`), stop-check, frequency cap, quiet hours, send via the app's mail, log.
    Use `examples/worker.mjs` as the tested decision core.
-5. **Sequences** (`sequences.md`) — start with the default 8 + platform-derived ones; set `kind`
-   (`marketing`/`transactional`), priority, and discounts (0% = hidden).
+5. **Sequences** (`sequences.md`) — start with the default 9 + platform-derived ones; set `kind`
+   (`marketing`/`transactional`/`nurture`), priority, and discounts (0% = hidden).
 6. **Admin UI** (`admin-ui.md`) — **3 tabs** (Sequences · Users & recipients · Settings); Sequences
    opens with KPIs, emails/day + sales/day charts and the provider plan/quota; a humanized readiness
    checklist; **start / pause / delete** (type `delete`); users search / cancel one email / exclude. Run the UI/UX audit on the page **and
    every table** (`admin-design-laws.md`): alignment, 44px actions, responsive columns, empty/loading/
-   error states.
+   error states. Use **one icon family** everywhere (`iconography.md`, `examples/icons.svg`) — nav, tabs,
+   actions, statuses, channels — with 44px targets and `aria-label`s on icon-only controls.
 7. **Templates** (`wysiwyg.md` + `examples/render.mjs`) — **reuse an existing editor if present**;
    email-safe pipeline; Mustache with the 0%-discount conditional. Run `email-design-laws.md` on the
    set: one CTA, 600px single column, 16px body, contrast, dark mode, plain-text twin.

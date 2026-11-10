@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-10 — Iconography: a consistent, accessible icon system
+
+- Added `references/iconography.md`: reuse the app's icon set first (Lucide/Heroicons/Material/Phosphor),
+  else **Lucide**; one family/stroke/scale (16/20/24px, `currentColor`); accessibility (decorative icons
+  `aria-hidden`, icon-only buttons need `aria-label` + tooltip + **44px** target, never colour/icon-only
+  status); layout; a **full icon map** for the page; do/don't; sprite usage.
+- Added `examples/icons.svg`: a ready Lucide-style `<symbol>` sprite (37 icons) covering nav, tabs,
+  sequence actions, statuses, channels, health banners, Leads/Paid and user-panel actions.
+- Added `examples/admin-preview.html`: a self-contained, light/dark rendered preview of the page (tabs,
+  KPIs, sequence actions, statuses, the exited-sequence badge, Leads/Paid) with the sprite inlined.
+- `references/admin-ui.md`: new **Iconography** section + inline icons on nav, tabs, sequence controls,
+  the user caret/badge, the audit log, channels, Leads/Paid and the admin tables.
+- `references/admin-design-laws.md`: icon rows in the per-surface law map and table rules, icon decisions
+  in the **Trace** block, and a pre-ship checklist item (Similarity/Fitts's/WCAG/Occam's).
+- `SKILL.md`: design rule 9 and the Admin UI step now require one icon family; `references/iconography.md`
+  added to the references list.
+- `README.md`: tasteful icons on the title, feature and sequence tables, and the Channels/email sections,
+  plus a short **"Icons make it feel finished"** note and icon keywords.
+- Housekeeping: removed the stale "Statistics tab" and "Purchased/Abandoned table" wording left over from
+  the merged-statistics change.
+
+
 ## 2026-11-09 — Tab DOM contract
 
 - `admin-ui.md`: panes must be direct siblings inside one `.tab-content`; a pane outside it (or a

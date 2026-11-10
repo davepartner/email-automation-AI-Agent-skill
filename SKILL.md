@@ -80,11 +80,15 @@ Study the app thoroughly and produce a short **integration plan**. See `referenc
 - Design **every table** with the table rules in `admin-design-laws.md`: aligned columns, right-aligned
   numbers, 44px row actions, pagination, responsive column hiding, empty/loading/error states,
   keyboard sort, and status shown with text + colour (never colour alone).
-- Add a top-level **"Email Automation"** menu with tabs: **Sequences · Users & recipients · Statistics ·
+- Use **one icon family** consistently (reuse the app's Lucide/Heroicons/Material set; else Lucide) —
+  nav, tabs, actions, status and channels. Icons speed scanning but never replace labels on primary or
+  destructive actions; icon-only controls get `aria-label` + tooltip + a 44px target. Full map and a
+  ready sprite: `references/iconography.md` + `examples/icons.svg`.
+- Add a top-level **"Email Automation"** menu with tabs: **Sequences (with stats) · Users & recipients ·
   Settings**. See `references/admin-ui.md`.
 - Design **every email** with `email-design-laws.md`: one idea, one 44px CTA, 600px single column,
   16px body, one accent, ≥4.5:1 contrast, alt text, dark mode, plain-text twin.
-- Add **admin-only** purchased/abandoned tables at the bottom of product and checkout pages.
+- Add **admin-only** **Leads / Paid** tables at the bottom of product and checkout pages.
 
 ### 5. Verify
 - Dry-run mode, a **preview/test-send** tool, idempotency checks, and a stop-condition audit.
@@ -150,8 +154,9 @@ the ones the platform can detect and act on (`references/sequences.md`).
    under the **`ui-ux-20-laws` skill** (if available): apply its laws, tokens, and Audit → Implement →
    Trace protocol (`references/admin-design-laws.md`, `references/email-design-laws.md`). Match the
    app's design tokens so it looks native; clear hierarchy, 44px targets, accessible contrast, one
-   primary action, one CTA per email. The pre-ship checklists and the `Trace:` block are part of the
-   deliverable, not optional polish.
+   primary action, one CTA per email. **Use one consistent icon family** (app set → Lucide) for nav,
+   tabs, actions, status and channels — see `references/iconography.md`. The pre-ship checklists and
+   the `Trace:` block are part of the deliverable, not optional polish.
 10. **Template editor: reuse before adding.** If the app already has a WYSIWYG editor, **reuse it**
     (configured for email). Otherwise add a **free, self-hosted** one (TinyMCE Community / Quill /
     TipTap / Summernote / GrapesJS). Output must be **email-safe** (inline CSS, tables, ~600px, no JS),
@@ -238,7 +243,7 @@ Full UI spec: `references/admin-ui.md`.
    (KPIs, emails/day, sales/day, provider plan/quota), including a **free WYSIWYG editor**,
    **add / reorder / delete steps**, a **user search + per-email cancel / exclude**, and **health
    warnings** (paused, cron not running, no mail transport).
-5. The admin-only purchased/abandoned tables, designed with the table laws.
+5. The admin-only **Leads / Paid** tables, designed with the table laws.
 6. Email templates that pass `email-design-laws.md` (single column, one CTA, contrast, dark mode,
    plain-text twin).
 7. A preview/test-send tool + dry-run + rollback notes.
@@ -259,6 +264,8 @@ Full UI spec: `references/admin-ui.md`.
 - `references/compliance.md` — consent, signed unsubscribe, preference center, bounce/complaint webhooks.
 - `references/admin-ui.md` — the dashboard, users tab (search/cancel/exclude), log (100/page), stats,
   admin-only tables, WYSIWYG, add/edit steps.
+- `references/iconography.md` — one icon family, sizes/stroke/colour, accessibility, the full page icon
+  map, and the do/don't; `examples/icons.svg` is a ready Lucide-style sprite.
 - `references/admin-design-laws.md` — the admin page and tables mapped to the 20 UI/UX laws
   (Audit → Trace → checklist).
 - `references/email-design-laws.md` — the 20 laws applied to the email canvas, hierarchy, CTA,

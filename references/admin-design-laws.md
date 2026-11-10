@@ -35,6 +35,10 @@ Load from that skill:
 | Empty states with a next action | **Peak-End** + **Goal-Gradient** | never a dead end |
 | 44px targets, focus rings | **Fitts's** + WCAG | hit size + keyboard access |
 | Consistent badges/buttons/drawers | **Similarity** | same look for same role |
+| One icon family, one stroke, one scale | **Similarity** + **Aesthetic-Usability** | one Lucide/Heroicons/app set; 16/20/24px; `currentColor` |
+| Icon-only controls (⋯, caret, cancel) | **Fitts's** + WCAG | 44×44px target, `aria-label` + tooltip, never colour-only |
+| Icons reinforce, never replace labels | **Occam's** + **Jakob's** | primary/destructive keep their text label; no decorative icon per heading |
+| Status as icon + text | **Similarity** + accessibility | `✓ Sent`, `⏱ Scheduled`, `✕ Cancelled`, `⚠ Failed` — one icon per state |
 | Cancel is the safe default | **Fitts's** + **Postel's** | safe default; destructive is explicit |
 
 ---
@@ -42,7 +46,7 @@ Load from that skill:
 ## Tables & data lists (every table, including the admin-only ones)
 
 A table is a UI, not a data dump. These rules apply to the sequences list, the users/recipients
-table, the sent log, the statistics breakdown, and the purchased/abandoned tables.
+table, the sent log, the statistics breakdown, and the Leads/Paid tables.
 
 | Decision | Law(s) | Rule |
 |----------|--------|------|
@@ -64,11 +68,13 @@ table, the sent log, the statistics breakdown, and the purchased/abandoned table
   focus-visible row actions |
 | Density | Occam's | Subtle hover or zebra — not both heavy; 8–12px cell padding |
 | Truncation | Postel's | Truncate long text with a `title`/expand affordance, never mid-word silently |
+| Row / status icons | Similarity + Fitts's | same icon per meaning (`inbox` Leads, `shopping-bag` Paid, `log-out` exited); 44px hit area; `aria-hidden` when the label is present |
 
 **Table checklist before shipping:** alignment and number formatting correct; 44px actions; status is
 text + colour; pagination total shown; filters preserved; optional columns hidden on mobile with no
 page-level horizontal scroll; empty/loading/error states present; headers and sort are accessible;
-currency formatted with the app's symbol.
+currency formatted with the app's symbol; **icons come from one family, are `aria-hidden` when labelled,
+and icon-only actions have `aria-label` + tooltip**.
 
 ---
 
@@ -105,6 +111,12 @@ Trace:
   → Law: Doherty Threshold (<400ms feedback) + Law of Closure (signals loading)
 - Decision: 44px targets, one accent on the primary control
   → Law: Fitts's Law + Von Restorff
+- Decision: one icon family (Lucide/app set), 16/20/24px, `currentColor`; icons sit beside their labels
+  → Law: Similarity (same look for same meaning) + Aesthetic-Usability (polished, scannable)
+- Decision: the `⋯` menu, caret and cancel actions are icon-only with `aria-label` + 44px targets
+  → Law: Fitts's Law (hit size) + WCAG 2.5.8 / 4.1.2 (name, role, value)
+- Decision: status is icon **and** text; no heading is decorated just for decoration
+  → Law: Similarity (one icon per state) + Occam's Razor (no ornamental icons)
 ```
 
 ## Pre-ship design checklist
@@ -117,4 +129,7 @@ Trace:
 - [ ] Empty / loading / error states on every table and chart.
 - [ ] 44px targets, visible focus rings, keyboard-navigable tabs + drawer.
 - [ ] Contrast ≥4.5:1; dark-mode tokens.
+- [ ] Icons: one family + stroke, 16/20/24px, `currentColor`; decorative ones `aria-hidden`; icon-only
+      buttons have `aria-label`, a tooltip and a 44px target; status is icon **and** text
+      (`references/iconography.md`).
 - [ ] Trace block attached.
