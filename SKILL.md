@@ -84,6 +84,9 @@ Study the app thoroughly and produce a short **integration plan**. See `referenc
   nav, tabs, actions, status and channels. Icons speed scanning but never replace labels on primary or
   destructive actions; icon-only controls get `aria-label` + tooltip + a 44px target. Full map and a
   ready sprite: `references/iconography.md` + `examples/icons.svg`.
+- **Gate it before you style it:** admin role required at the **route** (proxy/middleware), in the
+  **page**, and in **every server action**; render **404** for everyone else; `noindex` the section;
+  audit denials. Fail closed when no admin exists. (Rule 14.)
 - Add a top-level **"Email Automation"** menu with tabs: **Sequences (with stats) · Users & recipients ·
   Settings**. See `references/admin-ui.md`.
 - Design **every email** with `email-design-laws.md`: one idea, one 44px CTA, 600px single column,
@@ -176,6 +179,15 @@ the ones the platform can detect and act on (`references/sequences.md`).
     (not all email) — respect it at send time (`sequence-optout`). The **payday** sequence is a
     per-product *nurture* that runs on calendar dates (27th → last day → 2nd) **after** the cart sequence
     ends, and moves the lead **Leads → Paid** on purchase. See `references/sequences.md`.
+14. **Admin-only means admin permission, not "logged in".** The Email Automation page, its sequences,
+    recipients, sent log, statistics, test-send, exports, and the Leads/Paid tables must require the
+    app's **admin role or permission** — never merely an authenticated session. Enforce it in **three**
+    places: a **route-level gate** (proxy/middleware), an **authorization check inside the page**, and
+    inside **every server action** (including the master switch and sequence toggles). Return **404**
+    to non-admins so the surface's existence is not confirmed, mark admin routes `noindex`, audit both
+    allowed and denied attempts, and **fail closed**: if no admin is configured, the surface is closed.
+    There is **no** "any signed-in user" or "development mode" bypass. See
+    `references/admin-ui.md` §Access control and `references/non-disruption.md` §9.
 
 ---
 
@@ -193,6 +205,10 @@ the ones the platform can detect and act on (`references/sequences.md`).
 
 ## Admin surface (what the admin gets)
 
+- **Access control (hard requirement).** Everything below is admin-only in the strict sense: a stored
+  admin role or explicit allowlist, checked at the route, in the page, and in every action. A normal
+  account and an anonymous visitor both get **404**. This section contains PII (email + phone) and a
+  send button; "logged in" is not a permission.
 - **Calm, uncluttered layout** — ≤3 tabs, one primary action per view, details in a drawer, secondary/
   destructive actions in an overflow (`⋯`) menu, advanced settings collapsed, and a **checklist** that
   stays quiet when everything is fine.
@@ -250,6 +266,9 @@ Full UI spec: `references/admin-ui.md`.
 7. A preview/test-send tool + dry-run + rollback notes.
 8. The **UI/UX traces and pre-ship checklists** for the page, its tables, and the email set.
 9. A short **hand-off doc**: what was added, how to turn it on, how to pause, how to roll back.
+10. **Admin access control**: route gate + page check + per-action check, 404 for non-admins,
+    `noindex`, denial auditing, and a documented way to appoint the first admin. A screenshot of the
+    surface rendering 404 for a normal account is part of the proof, not optional.
 
 ---
 

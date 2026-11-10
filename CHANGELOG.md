@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-10 — Admin-only means admin permission, not "logged in"
+
+- `SKILL.md`: new **non-negotiable rule 14**. The Email Automation surface must require an **admin
+  role/permission** — enforced at the **route** (proxy/middleware), in the **page**, and in **every
+  server action** (master switch included). Non-admins get **404**, admin routes are `noindex`,
+  denials are audited, and the surface **fails closed** when no admin is configured. No "any
+  signed-in user" or development bypass.
+- `SKILL.md`: Admin UI step now gates the section **before** styling it; the deliverables list adds
+  admin access control and requires proof that a normal account sees 404.
+- `SKILL.md`: the Admin surface section opens with the access-control requirement, because the page
+  contains PII (email + phone) and a send button.
+- Rationale: the requirement already existed in `references/admin-ui.md` §Access control and
+  `references/non-disruption.md` §9, but was absent from the main contract, so it was easy to build
+  an ungated page — which is exactly what happened in a real integration.
+
 ## 2026-11-10 — Detect the icon source before adding icons
 
 - `iconography.md`: new **§1a Detect the source before you draw** — read the surface's layout, grep
