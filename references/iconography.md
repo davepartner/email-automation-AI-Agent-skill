@@ -5,6 +5,44 @@ Icons make the admin page faster to scan and more polished. But inconsistent or 
 
 ## 1. Reuse the app's icon set first
 
+### 1a. Detect the source before you draw
+
+**Never add an icon until you know which library the surface actually loads.** A class name in a code
+snippet is not proof that its font is present — copying `bi bi-search` into an admin page that only
+loads Font Awesome renders an empty box.
+
+1. **Read the layout/head for the exact surface** — the admin layout for admin pages, the site layout
+   for customer pages — and list the icon stylesheets/fonts actually linked: Bootstrap Icons
+   (`bootstrap-icons.css`), Font Awesome (`fontawesome` / `all.min.css`), Ionicons, Material Icons,
+   Lucide/Heroicons/Tabler/Feather, or a Flaticon project font.
+2. **Grep the views on that surface** for the prefix already in use: `bi bi-*`, `fa fa-*` / `fas fa-*`,
+   `ion-*`, `material-icons`, `ti ti-*`. The prefix that already exists is the one to match.
+3. **Confirm the glyph renders** on the page. An empty square means the stylesheet or class is wrong —
+   fix the source, don't add another library.
+
+> Admin and public layouts often load **different** sets. A partial shared by both (a timeline caret, a
+> table badge) must use a library that **both** load, or take its icon from the calling view. Example:
+> an admin layout may load Font Awesome while the site loads Font Awesome + Bootstrap Icons — the
+> shared caret must be Font Awesome.
+
+**Bootstrap Icons ↔ Font Awesome 5 mapping (common dashboard elements):**
+
+| Element | Bootstrap Icons | Font Awesome 5 |
+|---------|-----------------|----------------|
+| Send / sequences | `bi-send` | `fa-paper-plane` |
+| Users | `bi-people` | `fa-users` |
+| Settings | `bi-gear` | `fa-cog` |
+| Search | `bi-search` | `fa-search` |
+| Pause / resume | `bi-pause-circle` / `bi-play-circle` | `fa-pause-circle` / `fa-play-circle` |
+| Stop / cancel | `bi-stop-circle` / `bi-x-circle` | `fa-stop-circle` / `fa-times-circle` |
+| Exclude | `bi-slash-circle` | `fa-ban` |
+| Email / external link | `bi-envelope` / `bi-box-arrow-up-right` | `fa-envelope` / `fa-external-link-alt` |
+| Phone | `bi-telephone` | `fa-phone` |
+| Check / warning / unknown | `bi-check-circle` / `bi-exclamation-circle` / `bi-question-circle` | `fa-check-circle` / `fa-exclamation-circle` / `fa-question-circle` |
+| Expand caret | `bi-chevron-down` | `fa-chevron-down` |
+
+Then apply the family, size and accessibility rules below.
+
 - If the app already has an icon library (Lucide, Heroicons, Material Symbols, Phosphor, Font Awesome,
   Bootstrap Icons, the admin theme's icons), **use it**. Don't add a second family.
 - If it has none, use **Lucide** (MIT, 24×24, 2px stroke) or **Heroicons** (MIT). A ready sprite is in

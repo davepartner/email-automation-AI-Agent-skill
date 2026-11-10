@@ -154,8 +154,9 @@ the ones the platform can detect and act on (`references/sequences.md`).
    under the **`ui-ux-20-laws` skill** (if available): apply its laws, tokens, and Audit → Implement →
    Trace protocol (`references/admin-design-laws.md`, `references/email-design-laws.md`). Match the
    app's design tokens so it looks native; clear hierarchy, 44px targets, accessible contrast, one
-   primary action, one CTA per email. **Use one consistent icon family** (app set → Lucide) for nav,
-   tabs, actions, status and channels — see `references/iconography.md`. The pre-ship checklists and
+   primary action, one CTA per email. **Detect the app's icon source first**, then use one consistent
+   family (app set → Lucide) for nav, tabs, actions, status and channels — see
+   `references/iconography.md` §1a. The pre-ship checklists and
    the `Trace:` block are part of the deliverable, not optional polish.
 10. **Template editor: reuse before adding.** If the app already has a WYSIWYG editor, **reuse it**
     (configured for email). Otherwise add a **free, self-hosted** one (TinyMCE Community / Quill /

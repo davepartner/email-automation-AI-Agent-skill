@@ -54,6 +54,9 @@ Icons are what make the page feel finished — they let the admin scan tabs, act
 glance. **Full rules + the complete icon map live in `references/iconography.md`**; a ready-to-use
 Lucide-style sprite is in `examples/icons.svg`.
 
+- **Detect the source first** — read the surface's layout, grep the prefix already in use (`bi-`,
+  `fa-`, `ion-`), and confirm the glyph renders before adding an icon. A partial shared by the admin
+  and public layouts must use a set **both** load. See `references/iconography.md` §1a.
 - **Reuse the app's icon set first** (Lucide/Heroicons/Material/Phosphor or the admin theme's icons).
   Never add a second family. If the app has none, use **Lucide**.
 - **One family, one stroke, one scale:** 16px inline meta · 20px buttons/menu items · 24px tabs/nav.

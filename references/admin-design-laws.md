@@ -35,6 +35,7 @@ Load from that skill:
 | Empty states with a next action | **Peak-End** + **Goal-Gradient** | never a dead end |
 | 44px targets, focus rings | **Fitts's** + WCAG | hit size + keyboard access |
 | Consistent badges/buttons/drawers | **Similarity** | same look for same role |
+| Detect the loaded icon source before adding icons | **Similarity** + **Jakob's Law** | read the layout + existing prefixes (`bi-`, `fa-`, `ion-`); never copy a class without its font; shared partials use a set both layouts load |
 | One icon family, one stroke, one scale | **Similarity** + **Aesthetic-Usability** | one Lucide/Heroicons/app set; 16/20/24px; `currentColor` |
 | Icon-only controls (⋯, caret, cancel) | **Fitts's** + WCAG | 44×44px target, `aria-label` + tooltip, never colour-only |
 | Icons reinforce, never replace labels | **Occam's** + **Jakob's** | primary/destructive keep their text label; no decorative icon per heading |
@@ -111,6 +112,9 @@ Trace:
   → Law: Doherty Threshold (<400ms feedback) + Law of Closure (signals loading)
 - Decision: 44px targets, one accent on the primary control
   → Law: Fitts's Law + Von Restorff
+- Decision: the icon library is detected from the surface's layout and existing class prefixes before
+  any icon is added
+  → Law: Similarity (one visual language) + Jakob's Law (match the platform's conventions)
 - Decision: one icon family (Lucide/app set), 16/20/24px, `currentColor`; icons sit beside their labels
   → Law: Similarity (same look for same meaning) + Aesthetic-Usability (polished, scannable)
 - Decision: the `⋯` menu, caret and cancel actions are icon-only with `aria-label` + 44px targets

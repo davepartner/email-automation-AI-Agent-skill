@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-10 — Detect the icon source before adding icons
+
+- `iconography.md`: new **§1a Detect the source before you draw** — read the surface's layout, grep
+  the class prefix already in use, confirm the glyph renders, then stay in that one library. Adds a
+  Bootstrap Icons ↔ Font Awesome 5 mapping table and the shared-partial rule (admin and public layouts
+  often load different sets; a shared partial must use one both load).
+- `admin-ui.md`: detection bullet in the Iconography section.
+- `admin-design-laws.md`: detection row (Similarity + Jakob's Law) and Trace decision.
+- `SKILL.md` / `quickstart.md`: detection is part of the icon rule.
+
+
 ## 2026-11-10 — Iconography: a consistent, accessible icon system
 
 - Added `references/iconography.md`: reuse the app's icon set first (Lucide/Heroicons/Material/Phosphor),

@@ -21,8 +21,9 @@ The minimal path to a working Email Automation section. Read the other reference
    opens with KPIs, emails/day + sales/day charts and the provider plan/quota; a humanized readiness
    checklist; **start / pause / delete** (type `delete`); users search / cancel one email / exclude. Run the UI/UX audit on the page **and
    every table** (`admin-design-laws.md`): alignment, 44px actions, responsive columns, empty/loading/
-   error states. Use **one icon family** everywhere (`iconography.md`, `examples/icons.svg`) — nav, tabs,
-   actions, statuses, channels — with 44px targets and `aria-label`s on icon-only controls.
+   error states. **Detect the app's icon source first** (`iconography.md` §1a), then use **one icon
+   family** everywhere (`examples/icons.svg` if it has none) — nav, tabs, actions, statuses, channels —
+   with 44px targets and `aria-label`s on icon-only controls.
 7. **Templates** (`wysiwyg.md` + `examples/render.mjs`) — **reuse an existing editor if present**;
    email-safe pipeline; Mustache with the 0%-discount conditional. Run `email-design-laws.md` on the
    set: one CTA, 600px single column, 16px body, contrast, dark mode, plain-text twin.
