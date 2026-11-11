@@ -42,10 +42,27 @@ List-Unsubscribe-Post: List-Unsubscribe=One-Click
 ## Scoped unsubscribe (per product / sequence)
 
 A product reminder's unsubscribe link should opt the user out of **that sequence for that product**,
-not all marketing. Encode the scope in the signed token: `{ userId, email, sequenceKey, productId }`.
-The server records it in `email_optouts` and the worker cancels that scope with reason
-`sequence-optout`. The admin caret then shows **"Manually exited this sequence"**. A global
-unsubscribe (all marketing) still exists via `email_suppressions`.
+not all marketing. Encode the scope in the signed token and **never infer it from a missing field**:
+
+```json
+{ "userId": "u_1", "scope": "product",
+  "sequenceKey": "payday_reengage", "productId": "A",
+  "iat": 1767225600, "exp": 1769817600, "jti": "3f0c…" }
+```
+
+- **`scope`** is required: `all` (global marketing), `sequence` (this sequence, all products — needs
+  `sequenceKey`), or `product` (one sequence for one product — needs `sequenceKey` + `productId`).
+  A token without a known scope is **rejected**, so an old `{userId,email}` token can never silently
+  become a global opt-out.
+- **`exp`** — expire links (e.g. 30 days) and reject expired tokens. **`jti`** — record it when used and
+  reject replays (one-click links get prefetched and re-clicked).
+- **`iat`** — reject tokens issued in the future (clock skew > 5 min), which usually means tampering.
+- **Verify first, then apply:** `verifyUnsubscribeToken(token, secret, { isUsed })` →
+  `applyUnsubscribe(store, payload)`. The server records `email_optouts` and the worker cancels that
+  scope with reason `sequence-optout`. The admin caret then shows **"Manually exited this sequence"**.
+  A global unsubscribe still exists via `email_suppressions`.
+- Rotate the signing secret without breaking old links: verification may try the current and previous
+  secrets; never accept an unsigned token.
 
 ## 3. Preference center
 

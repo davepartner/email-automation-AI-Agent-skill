@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-11-11 — Correctness: calendar ordering, timezones, purchases, cap, tokens
+
+Hardening the payday work after a review. Behaviour changes, each covered by a test.
+
+- **Sequential calendar anchoring.** `enroll` now chains each calendar step after the previous one, so
+  "27th → last day → 2nd" is always in order. Previously every step resolved from the enrolment date, so
+  enrolling on the 1st scheduled the "2nd" email before the "27th" one. Monotonicity is tested across
+  month-end, February, leap February and the year boundary.
+- **User-local calendar times.** The user's UTC offset is passed to `nextOccurrence`, so 09:00 means
+  09:00 local. `localHour` was also fixed for half-hour offsets (e.g. UTC+05:30). DST caveat documented.
+- **`handlePurchase`.** A tested, idempotent purchase transition: mark the lead `paid`, cancel that
+  product's pending reminders, and enrol the product-scoped paid sequences. Replays (webhook retries) are
+  no-ops; buying product A never touches product B. Enrolment is now idempotent on
+  `(enrollment_id, step_id)` — including steps without an explicit `id`.
+- **Cap collision ordering.** Due rows are sorted by `priority` then `due_at`, so the daily cap defers the
+  least important email instead of whichever row happened to be inserted first.
+- **Calendar deferral policy.** A date-anchored email before the window moves to the window start on the
+  same date; if it is blocked by the cap, the window has closed, or **its date passed while the worker was
+  down**, it becomes **`missed`** (a new status, visible to the admin) — never sent a day late, never
+  silently cancelled.
+- **Unsubscribe token hardening.** Tokens now carry a required `scope` (`all` | `sequence` | `product`),
+  `iat`, `exp` and a unique `jti`; verification rejects expired, future-dated, replayed and
+  scope-less (legacy) tokens. Added `applyUnsubscribe` to apply a verified payload to the right scope.
+  Legacy `{userId,email}` tokens are refused rather than silently treated as global.
+- **Holdout applies to nurture** at enrolment, not only at send time.
+- **Validation.** Invalid calendar anchors (`32`, `'first'`) throw instead of scheduling `due_at = null`
+  (which would have meant "due immediately").
+- Docs updated: `sequences.md`, `triggers.md`, `compliance.md`, `reference-implementation.md`,
+  `data-model.md` (`missed` status), `admin-ui.md`, `SKILL.md`, `README.md`. **60 tests pass** (was 46).
+
 ## 2026-11-10 — Admin-only means admin permission, not "logged in"
 
 - `SKILL.md`: new **non-negotiable rule 14**. The Email Automation surface must require an **admin
@@ -24,7 +54,6 @@
 - `admin-ui.md`: detection bullet in the Iconography section.
 - `admin-design-laws.md`: detection row (Similarity + Jakob's Law) and Trace decision.
 - `SKILL.md` / `quickstart.md`: detection is part of the icon rule.
-
 
 ## 2026-11-10 — Iconography: a consistent, accessible icon system
 

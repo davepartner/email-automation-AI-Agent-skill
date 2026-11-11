@@ -187,7 +187,7 @@ Two jobs: **find a user and control what they receive**, and **audit the log**.
 - **Search box:** "Find a user by email" → results → open the **user panel**.
 - **User panel:** email (→ profile), phone, registration/login dates, consent, holdout flag.
 - **Their emails, grouped by sequence** — each step with status (`✓ sent` · `⏱ scheduled` · `✕ cancelled` ·
-  `⚠ failed`) and its date. A **down caret** (`chevron-down`) on each sequence expands the full ordered
+  `⚠ missed` · `⚠ failed`) and its date. A **down caret** (`chevron-down`) on each sequence expands the full ordered
   list of emails going out. **If the user opted out, a `log-out` badge beside the caret reads "Manually
   exited this sequence"**, and the expanded view shows *"Exited — unsubscribed"* (or *"Exited —
   purchased"* if they bought).

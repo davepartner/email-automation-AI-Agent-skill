@@ -102,10 +102,16 @@ WHERE pl.stage = 'lead' AND pl.status = 'active'
 ```
 
 Enrol **once per (user, product)** (`trigger_ref = 'payday:' || product_id`). Steps are calendar-anchored
-(27th, last day, 2nd) — see `examples/schedule.mjs`.
+and **sequential** (27th → last day → 2nd; each resolves after the previous one), in the user's **local**
+hour — see `examples/schedule.mjs`.
 
-**On purchase:** move the lead to `paid` (`examples/leads.mjs` `moveToPaid`), cancel that product's
-`scheduled` cart/payday rows, and enrol the **paid-product** sequences (review/upsell).
+**On purchase:** call `worker.handlePurchase({ userId, productId, purchasedAt, paidSequences })`
+(`examples/worker.mjs`). It marks the lead `paid`, cancels that product's `scheduled` cart/payday rows,
+and enrols the **paid-product** sequences (review/upsell, scoped to the product). It is idempotent, so a
+replayed webhook is safe. Buying product A never touches product B.
+
+If a calendar email can't go out on its date (cap reached, window closed), it is marked **`missed`** —
+not sent a day late and not silently cancelled.
 
 ## Replenishment (consumables)
 

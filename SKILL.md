@@ -176,9 +176,12 @@ the ones the platform can detect and act on (`references/sequences.md`).
     credentials when none exists (Settings → Channels). Prefer push → email → WhatsApp → SMS with
     fallback, and never send on two channels the same day. See `references/channels.md`.
 13. **Scoped unsubscribe + payday re-engagement.** A user can opt out of **one sequence for one product**
-    (not all email) — respect it at send time (`sequence-optout`). The **payday** sequence is a
-    per-product *nurture* that runs on calendar dates (27th → last day → 2nd) **after** the cart sequence
-    ends, and moves the lead **Leads → Paid** on purchase. See `references/sequences.md`.
+    (not all email) — respect it at send time (`sequence-optout`). Unsubscribe tokens carry a required
+    `scope`, `exp` and single-use `jti`; never infer a scope from a missing field. The **payday** sequence
+    is a per-product *nurture* that runs on calendar dates (27th → last day → 2nd) **after** the cart
+    sequence ends, anchored **sequentially** in the user's **local** time, and moves the lead
+    **Leads → Paid** on purchase via an idempotent `handlePurchase`. A date that cannot be met is marked
+    **`missed`**, never sent late. See `references/sequences.md`.
 14. **Admin-only means admin permission, not "logged in".** The Email Automation page, its sequences,
     recipients, sent log, statistics, test-send, exports, and the Leads/Paid tables must require the
     app's **admin role or permission** — never merely an authenticated session. Enforce it in **three**

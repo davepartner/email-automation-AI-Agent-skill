@@ -5,7 +5,7 @@
     "channel": "email | push | whatsapp | sms; non-email channels require explicit opt-in",
     "priority": "lower number = higher precedence (purchase 1 … payday 6 … win-back 8); max 1 active promotional per user",
     "nurture": "kind=nurture is per-product (payday); skips promotional precedence, shares the 1/day cap",
-    "schedule": "a step may use schedule {type:'calendar', day:27|'last'|2, hour} instead of delay_minutes",
+    "schedule": "a step may use schedule {type:'calendar', day:27|'last'|2, hour} instead of delay_minutes; calendar steps run in order (each after the previous) at the user's local hour",
     "templates": "each step 'copy' key resolves to a template in the 'templates' map (subject + body file)"
   },
   "master_enabled": false,

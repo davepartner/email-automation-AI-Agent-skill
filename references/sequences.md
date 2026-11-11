@@ -135,13 +135,22 @@ that initial sequence has finished (~7 days after abandonment) and the product i
 - **Trigger:** a `product_lead` still `lead`/`active`, abandoned **≥ 7 days ago** (so it doesn't clash
   with the cart sequence), and no paid order for that product.
 - **Calendar scheduling:** steps use `schedule: { type: 'calendar', day: 27 | 'last' | 2, hour }` instead
-  of `delay_minutes` (`examples/schedule.mjs`).
+  of `delay_minutes` (`examples/schedule.mjs`). Calendar steps are anchored **sequentially** — each one
+  resolves after the previous step's due time, so the order is always 27th → last day → 2nd, whatever
+  day the user was enrolled. Anchoring all steps to the enrolment date could put the "2nd" email first.
+- **User-local time:** `hour` is the user's local hour; pass their UTC offset
+  (`timezoneOffsetMinutes`) so 09:00 means 09:00 for them, not 09:00 UTC. (An offset is correct for the
+  next few weeks; for months ahead, resolve the offset for the target date so DST is right.)
+- **Missed, not late:** if a calendar email is blocked by the daily cap, the send window has closed, or
+  its date passed while the scheduler was down, it is marked **`missed`** (visible to the admin) — never
+  sent a day late and never silently cancelled.
 - **Stop:** purchase (→ moves to **Paid**, enters the paid-product sequences), **per-product
   unsubscribe** (`sequence-optout`), global unsubscribe.
 - **Per-product:** each enrollment is scoped to `product_id`; the email references that product.
 - **No clash:** payday is a **nurture** sequence — it doesn't cancel or get cancelled by the promotional
   sequence, and the **cross-sequence frequency cap (1 marketing email/user/day)** means it never doubles
-  up. If a send day collides, it defers.
+  up. If a send day collides, the **lower-priority** email yields (rows are processed by priority), and
+  the payday email is marked `missed` rather than sent late.
 
 ---
 

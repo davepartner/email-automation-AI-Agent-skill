@@ -113,15 +113,24 @@ DELETE FROM email_scheduled WHERE status IN ('sent','cancelled','failed') AND du
 
 ## Payday (calendar) scheduling & the Leads→Paid move
 
-- **Calendar steps:** compute `due_at` with `nextOccurrence(at, day, { hour })` (27th, `'last'`, `2nd`)
-  instead of `at + delay`. Store it in `email_scheduled.due_at`; the rest of the worker is unchanged.
-  See `examples/schedule.mjs`.
+- **Calendar steps:** compute `due_at` with `nextOccurrence(cursor, day, { hour, utcOffsetMinutes })`
+  (27th, `'last'`, `2nd`) instead of `at + delay`, and advance `cursor` to each step's `due_at` so the
+  steps are strictly sequential. Pass the user's UTC offset so the send hour is local. See
+  `examples/schedule.mjs`.
 - **Per-product scope:** set `email_enrollments.product_id` and copy it to
   `email_scheduled.product_id`.
-- **On purchase:** for the product, call `moveToPaid(lead)` (`examples/leads.mjs`), cancel that product's
-  `scheduled` cart/payday rows, then enrol the **paid-product** sequences (review/upsell).
+- **On purchase:** call `worker.handlePurchase({ userId, productId, purchasedAt, paidSequences })`
+  (`examples/worker.mjs`). It is idempotent: it marks the lead `paid`, cancels the product's pending
+  `scheduled` rows (reason `purchased`), and enrols the paid-product sequences — keyed on
+  `(enrollment_id, step_id)` so a webhook replay never double-schedules. Buying product A never touches
+  product B.
 - **Scoped opt-out:** record `email_optouts(user_id, sequence_key, product_id)`; the worker checks it
-  before sending and cancels with reason `sequence-optout`.
+  before sending and cancels with reason `sequence-optout`. Apply it from a **verified** token:
+  `verifyUnsubscribeToken` → `applyUnsubscribe`.
+- **Date-anchored failures:** a calendar email blocked by the cap or the send window is marked
+  **`missed`**, not cancelled and not sent late; surface `missed` in the admin log.
+- **Ordering:** `dueScheduled` sorts by `priority` then `due_at`, so the daily cap always defers the
+  least important email.
 
 ## Batching & scale
 

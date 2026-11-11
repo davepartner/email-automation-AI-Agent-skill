@@ -205,7 +205,9 @@ SKILL.md, and build the Email Automation section into this app:
 - **Attribution still needs volume** — even with last-touch + a holdout, small samples are noisy; treat
   lift as directional until you have data.
 - **Deliverability is earned** — new domains need warm-up; the skill is only as good as sender reputation.
-- **Timezone/quiet-hours** need a stored user timezone; unknown timezones fall back to the admin window.
+- **Timezone/quiet-hours** use the stored per-user UTC offset; if it is missing, sending falls back to
+  the admin window. Offsets are fixed at enrolment — for dates months ahead, resolve the offset for the
+  target date so DST is correct.
 - **The reference worker is in-memory** — the tests cover decision logic, not real `SKIP LOCKED` DB
   concurrency; add a Postgres integration test before production.
 

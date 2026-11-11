@@ -34,7 +34,7 @@ email_enrollments
 email_scheduled
   id, enrollment_id FK, step_id FK, user_id FK,
   due_at(timestamp),
-  status(scheduled | sending | sent | cancelled | failed),
+  status(scheduled | sending | sent | cancelled | failed | missed),
   locked_at, attempts(int), deferrals(int, default 0), error(text),
   kind(varchar), priority(int), group(treatment | holdout),
   channel(varchar, default 'email'),           -- email | push | whatsapp | sms
@@ -68,9 +68,13 @@ email_suppressions
   created_at
 
 email_optouts                                -- scoped opt-out: one sequence for one product
-  id, user_id FK, sequence_key(varchar), product_id(varchar, nullable),
+  id, user_id FK, sequence_key(varchar),
+  product_id(varchar, NOT NULL default '*'),  -- '*' = every product of that sequence
   reason(unsubscribed | admin), created_at,
-  UNIQUE(user_id, sequence_key, product_id)  -- product_id null = all products of that sequence
+  UNIQUE(user_id, sequence_key, product_id)
+  -- Use the '*' sentinel, not NULL: in Postgres NULLs are distinct, so a nullable
+  -- product_id would let duplicate "all products" rows through. A partial unique
+  -- index (WHERE product_id IS NULL) works too.
 
 product_leads                                -- per-product lead / paid state
   id, user_id FK, product_id(varchar),
@@ -101,7 +105,11 @@ email_consent
   id, user_id FK, marketing bool, consent_at, consent_ip, source, updated_at
 
 email_unsubscribe_tokens
-  id, user_id FK, token_hash, expires_at, used_at
+  id, user_id FK, token_hash, jti(unique),
+  scope(all | sequence | product), sequence_key(varchar, nullable), product_id(varchar, nullable),
+  issued_at, expires_at, used_at
+  -- Reject tokens with no/unknown scope, expired tokens, and a jti already used.
+  -- Never infer "all" from a missing scope.
 
 user_events (optional, if the app has no hooks)
   id, user_id FK, type(registration | login | cart_add | checkout_start | product_view |

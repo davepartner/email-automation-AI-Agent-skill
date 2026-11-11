@@ -35,8 +35,21 @@ test('nextOccurrence respects a UTC offset', () => {
   assert.equal(nextOccurrence(from, 27, { hour: 9, utcOffsetMinutes: 60 }), Date.UTC(2026, 0, 27, 8));
 });
 
-test('paydaySteps returns 27th, last, 2nd', () => {
+test('paydaySteps returns 27th, last, 2nd with stable ids', () => {
   const steps = paydaySteps();
   assert.deepEqual(steps.map((s) => s.schedule.day), [27, 'last', 2]);
+  assert.deepEqual(steps.map((s) => s.id), ['payday-27', 'payday-last', 'payday-2']);
   assert.equal(steps.length, 3);
+});
+
+test('invalid anchors throw instead of returning null', () => {
+  assert.throws(() => nextOccurrence(Date.UTC(2026, 0, 1), 0), RangeError);
+  assert.throws(() => nextOccurrence(Date.UTC(2026, 0, 1), 32), RangeError);
+  assert.throws(() => nextOccurrence(Date.UTC(2026, 0, 1), 'first'), RangeError);
+  assert.throws(() => nextOccurrence(Date.UTC(2026, 0, 1), 'last', { hour: 24 }), RangeError);
+});
+
+test('a day past the month end clamps (31 → 28 Feb, 29 in a leap year)', () => {
+  assert.equal(nextOccurrence(Date.UTC(2026, 1, 1), 31, { hour: 9 }), Date.UTC(2026, 1, 28, 9));
+  assert.equal(nextOccurrence(Date.UTC(2028, 1, 1), 31, { hour: 9 }), Date.UTC(2028, 1, 29, 9));
 });
