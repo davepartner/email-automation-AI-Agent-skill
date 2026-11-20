@@ -291,6 +291,11 @@ Full UI spec: `references/admin-ui.md`.
     `ProductSimilarityMatcher` service, the signed Like/Dislike endpoints, the 3 hand-typed email
     templates, the admin toggle + product-noun settings, and the tested state machine
     (`examples/cross-sell.mjs` + `cross-sell.test.mjs`).
+12. **User-profile email sequences** — an admin-only **active / previous / pending** sequence list on the
+    user profile (or attached at the bottom when there is no menu) with **stop one**, **add to a
+    sequence** (product search by id/title), and **stop all** buttons; plus a user-facing **"Stop
+    promotional emails"** button that stops all sequences and blocks re-enrolment. See
+    `references/user-profile.md`.
 
 ---
 
@@ -320,6 +325,8 @@ Full UI spec: `references/admin-ui.md`.
 - `references/wysiwyg.md` — reuse an existing editor, else add one; email-safe pipeline.
 - `references/cross-sell.md` — intelligent multi-product cross-sell: matching engine, signed Like/Dislike
   routes, migrations + Eloquent relationships, admin toggle, 7-day cooldown state machine.
+- `references/user-profile.md` — the per-user **active / previous / pending** sequence surface with
+  admin stop-one / add / stop-all and the user's "Stop promotional emails" self-service opt-out.
 - `references/quickstart.md` — the one-page path.
 - `examples/render.mjs` + `render.test.mjs` — Mustache email renderer + 0%-discount test.
 - Run the tests with `npm install && npm test` (worker + renderer + cross-sell).

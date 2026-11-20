@@ -40,6 +40,7 @@ nothing breaks and nothing sends until you say so.
 | 📣 **Multi-channel** | **email · push · WhatsApp · SMS** — reuses existing providers or lets the admin add API keys; users opt in per channel |
 | 💰 **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
 | 🎯 **Intelligent cross-sell** | after a **7-day cooldown**, recommend the **next most similar product** (metadata → semantic → collaborative matching) in a hand-typed 3-email sequence with signed **Like / Dislike** links that re-enrol or redirect |
+| 👤 **User profile sequences** | an admin-only **active / previous / pending** sequence list per user with **stop one** · **add to a sequence** (product search by id/title) · **stop all** — plus a user-facing **"Stop promotional emails"** button |
 | 🩺 **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
 | 👤 **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
 | 🗂️ **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |
@@ -148,6 +149,7 @@ references/
 ├── iconography.md                    # one icon family, sizes, accessibility, full page icon map
 ├── health-checks.md                  # paused / cron / transport warnings
 ├── cross-sell.md                     # intelligent cross-sell: matching, signed Like/Dislike, migrations, state machine
+├── user-profile.md                   # per-user sequence list + stop-one / add / stop-all + user opt-out
 └── reference-implementation.md       # engine pseudocode + SQL (locking, reaper, attribution)
 examples/
 ├── worker.mjs                        # executable scheduler/worker core
@@ -249,6 +251,8 @@ email, review request email, replenishment reminder, user retention, increase re
 purchase, conversion optimization, funnel emails, sales funnel automation, customer.io alternative,
 intelligent cross-sell, product recommendation email, similar product sequence, product similarity,
 collaborative filtering, like dislike feedback, signed feedback token, product noun, cross-sell cooldown,
+user profile sequences, active sequence list, previous sequences, pending sequences, stop sequence,
+stop all sequences, add user to sequence, product search, stop promotional emails, email opt-out,
 klaviyo alternative, mautic alternative, dittofeed alternative, email marketing automation, cron email,
 scheduled emails, stop conditions, frequency cap, quiet hours, personalization, one-to-one email,
 transactional vs marketing email, conversion attribution, email statistics, email analytics.

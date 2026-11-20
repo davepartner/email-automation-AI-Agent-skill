@@ -29,6 +29,22 @@ features, uses the platform's **product noun**, and enrols the user in a **hand-
   `references/reference-implementation.md` (cross-sell SQL), `examples/sequence-config.json`
   (settings + templates + sequence).
 
+### User-profile email sequences (admin + self-service)
+
+- **`examples/cross-sell.mjs`** (extended): `listSequences` (active / previous / pending, with product
+  titles), `stopSequence` (admin, one sequence), `stopAllSequences` (admin, all), `enrollForProduct`
+  (admin add by product id/title), `stopPromotionalEmail` (user self-service — flips opt-out + stops all),
+  and `searchProduct` (id or title). `maybeEnrollNext`, `enrollForProduct`, `dislike` and `processDue`
+  now also honour a per-user **promotional opt-out**.
+- **`examples/cross-sell.test.mjs`** (9 new tests): list/group, stop one, stop all (admin keeps consent),
+  user opt-out blocks future enrolment and cancels pending sends, add-to-sequence guards (toggle, cap,
+  purchased, disliked, not-found), and product search. **91 tests pass** (was 82).
+- **`references/user-profile.md`** (new): the admin-only **active / previous / pending** surface (menu or
+  profile-bottom), stop-one / add / stop-all buttons, the user's "Stop promotional emails" button, Laravel
+  routes + controller, and access-control notes.
+- Docs updated: `SKILL.md` (deliverable 12 + reference), `README.md` (feature + structure + keywords),
+  `references/admin-ui.md` (profile surface cross-ref), `CHANGELOG.md`.
+
 ## 2026-11-11 — Correctness: calendar ordering, timezones, purchases, cap, tokens
 
 Hardening the payday work after a review. Behaviour changes, each covered by a test.

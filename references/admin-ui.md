@@ -202,6 +202,16 @@ Two jobs: **find a user and control what they receive**, and **audit the log**.
   exited this sequence"; the user can still receive other sequences.
 - Every change is written to `admin_audit`.
 
+### User profile — active / previous / pending sequences
+
+The same control surface is available **on the user profile** (under an **"Email sequences"** menu item,
+or attached at the bottom of the profile when there is no menu). It groups the user's sequences into
+**active · previous · pending** (which product, which sequence, which step, next send) with three admin
+actions — **Stop this sequence**, **Add to a sequence** (product search by id/title), and **Stop all
+sequences** — plus the user's own **"Stop promotional emails"** self-service button. Full spec:
+`references/user-profile.md`; tested logic: `examples/cross-sell.mjs` (`listSequences`, `stopSequence`,
+`stopAllSequences`, `enrollForProduct`, `stopPromotionalEmail`, `searchProduct`).
+
 ### The audit log
 
 The full sent log, **paginated by 100**:

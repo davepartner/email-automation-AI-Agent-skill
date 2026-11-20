@@ -337,6 +337,7 @@ export class CrossSellStore {
     this.feedback = new Map(); // userId -> { liked: Set, disliked: Set }
     this.purchased = new Map(); // userId -> Set(productId)
     this.completed = new Map(); // userId -> Set(productId)
+    this.promotionalOptOut = new Set(); // userId -> opted out of promotional email
     this.usedJti = new Set();
     this.users = new Map(); // userId -> { email, firstName }
   }
@@ -415,6 +416,27 @@ export class CrossSellStore {
   isJtiUsed(jti) {
     return this.usedJti.has(jti);
   }
+
+  setPromotionalOptOut(userId, value = true) {
+    if (value) this.promotionalOptOut.add(userId);
+    else this.promotionalOptOut.delete(userId);
+  }
+  isPromotionallyOptedOut(userId) {
+    return this.promotionalOptOut.has(userId);
+  }
+
+  /** Cancel every still-scheduled row for a user (admin stop-all / user stop-promotional). */
+  cancelUserRows(userId, reason) {
+    let n = 0;
+    for (const r of this.rows) {
+      if (r.userId === userId && r.status === 'scheduled') {
+        r.status = 'cancelled';
+        r.reason = reason;
+        n += 1;
+      }
+    }
+    return n;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -458,6 +480,9 @@ export class CrossSellEngine {
     // Guard: the global toggle is checked before ANY enrolment or dispatch.
     if (this.settings.cross_sell_automation_enabled !== true) {
       return { enrolled: 0, reason: 'disabled' };
+    }
+    if (this.store.isPromotionallyOptedOut(userId)) {
+      return { enrolled: 0, reason: 'opted-out' };
     }
     if (this.store.activeCrossSellCount(userId) >= this.settings.cross_sell_max_per_user) {
       return { enrolled: 0, reason: 'cap' };
@@ -551,7 +576,7 @@ export class CrossSellEngine {
 
     const product = this.matcher.get(e.recommendedProductId);
     let next = null;
-    if (this.settings.cross_sell_automation_enabled === true) {
+    if (this.settings.cross_sell_automation_enabled === true && !this.store.isPromotionallyOptedOut(e.userId)) {
       const candidate = this.matcher.findNextBest(e.sourceProductId, { exclude: this.exclusionsFor(e.userId) });
       if (candidate && this.store.activeCrossSellCount(e.userId) < this.settings.cross_sell_max_per_user) {
         const firstSendAt = now + this.settings.cross_sell_reenroll_delay_hours * HOUR_MS;
@@ -588,6 +613,12 @@ export class CrossSellEngine {
         row.reason = 'not-active';
         continue;
       }
+      // Guard: a user who opted out of promotional email gets nothing more.
+      if (this.store.isPromotionallyOptedOut(row.userId)) {
+        row.status = 'cancelled';
+        row.reason = 'promotional-optout';
+        continue;
+      }
       row.status = 'sent';
       row.sentAt = now;
       await send({ userId: row.userId, enrollment: e, step: row.step, productId: row.productId });
@@ -595,6 +626,126 @@ export class CrossSellEngine {
       sent += 1;
     }
     return { sent };
+  }
+
+  // -------------------------------------------------------------------------
+  // User-profile surface: list / stop one / stop all / add / self-service opt-out
+  // -------------------------------------------------------------------------
+
+  /** Find products by exact id, else by case-insensitive title substring. */
+  searchProduct(query) {
+    const q = String(query ?? '').trim();
+    if (!q) return [];
+    const byId = this.matcher.get(q);
+    if (byId) return [byId];
+    const lower = q.toLowerCase();
+    return this.matcher.all().filter((p) => (p.title ?? '').toLowerCase().includes(lower));
+  }
+
+  /** A product title (or id when the product is unknown/deleted). */
+  productTitle(productId) {
+    return this.matcher.get(productId)?.title ?? productId;
+  }
+
+  /**
+   * Group a user's sequences for the admin profile view.
+   *  - active   → enrollments currently in flight (status active / paused)
+   *  - previous → enrollments with a terminal status (completed / liked / disliked / cancelled)
+   *  - pending  → still-scheduled future emails (what's queued next), per product
+   */
+  listSequences(userId) {
+    const enrollments = this.store.enrollmentsFor(userId);
+    const active = [];
+    const previous = [];
+    for (const e of enrollments) {
+      const view = {
+        enrollmentId: e.id,
+        sequenceType: e.sequenceType,
+        productId: e.recommendedProductId ?? e.sourceProductId,
+        productTitle: this.productTitle(e.recommendedProductId ?? e.sourceProductId),
+        status: e.status,
+        currentStep: e.currentStep,
+        nextSendAt: e.nextSendAt ?? null,
+        reason: e.cancelReason ?? null,
+      };
+      if ([ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PAUSED].includes(e.status)) {
+        active.push(view);
+      } else {
+        previous.push(view);
+      }
+    }
+    const pending = this.store.rows
+      .filter((r) => r.userId === userId && r.status === 'scheduled')
+      .map((r) => ({
+        enrollmentId: r.enrollmentId,
+        productId: r.productId,
+        productTitle: this.productTitle(r.productId),
+        step: r.step,
+        dueAt: r.dueAt,
+      }))
+      .sort((a, b) => a.dueAt - b.dueAt);
+    return { active, previous, pending };
+  }
+
+  /** Admin: stop a single sequence (cancels its remaining scheduled emails). */
+  stopSequence(enrollmentId, { actor = 'admin', now = this.now() } = {}) {
+    const e = this.store.getEnrollment(enrollmentId);
+    if (!e) return { ok: false, reason: 'not-found' };
+    if (![ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PAUSED].includes(e.status)) {
+      return { ok: false, reason: 'not-active', status: e.status };
+    }
+    e.status = ENROLLMENT_STATUS.CANCELLED;
+    e.cancelReason = actor;
+    e.cancelledAt = now;
+    const cancelled = this.store.cancelEnrollmentRows(enrollmentId, `stopped:${actor}`);
+    return { ok: true, stopped: 1, cancelled };
+  }
+
+  /**
+   * Stop every active/paused sequence for a user.
+   *  - actor 'user'  → the profile "Stop promotional emails" button (flips opt-out, so no
+   *    future sequence re-enrols).
+   *  - actor 'admin' → an admin force-stops all sequences without flipping consent.
+   */
+  stopAllSequences(userId, { actor = 'admin', now = this.now() } = {}) {
+    let stopped = 0;
+    for (const e of this.store.enrollmentsFor(userId)) {
+      if ([ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PAUSED].includes(e.status)) {
+        e.status = ENROLLMENT_STATUS.CANCELLED;
+        e.cancelReason = actor;
+        e.cancelledAt = now;
+        stopped += 1;
+      }
+    }
+    const cancelled = this.store.cancelUserRows(userId, `stopped:${actor}`);
+    return { ok: true, stopped, cancelled };
+  }
+
+  /** User self-service: stop receiving promotional emails — stops all sequences. */
+  stopPromotionalEmail(userId, { now = this.now() } = {}) {
+    this.store.setPromotionalOptOut(userId, true);
+    const res = this.stopAllSequences(userId, { actor: 'user', now });
+    return { ok: true, promotionalOptOut: true, ...res };
+  }
+
+  /**
+   * Admin: add a user to a cross-sell sequence for a specific product (selected by id or
+   * title search), bypassing similarity. Respects the toggle, the user's promotional
+   * opt-out, the per-user cap, and the dislike/purchase blacklist.
+   */
+  enrollForProduct({ userId, productId, sourceProductId = null, anchorAt = this.now() }) {
+    if (this.settings.cross_sell_automation_enabled !== true) return { enrolled: 0, reason: 'disabled' };
+    if (this.store.isPromotionallyOptedOut(userId)) return { enrolled: 0, reason: 'opted-out' };
+    if (this.store.activeCrossSellCount(userId) >= this.settings.cross_sell_max_per_user) {
+      return { enrolled: 0, reason: 'cap' };
+    }
+    const product = this.matcher.get(productId);
+    if (!product) return { enrolled: 0, reason: 'not-found' };
+    if (this.store.purchased.get(userId)?.has(productId)) return { enrolled: 0, reason: 'purchased' };
+    if (this.store.isDisliked(userId, productId)) return { enrolled: 0, reason: 'disliked' };
+
+    const firstSendAt = anchorAt; // admin-initiated: start immediately (worker applies the send window)
+    return this._enroll({ userId, sourceProductId, recommendedProductId: productId, firstSendAt });
   }
 }
 

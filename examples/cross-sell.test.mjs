@@ -326,3 +326,122 @@ test('buildCheckoutUrl defaults and overrides UTM params', () => {
   );
   assert.ok(buildCheckoutUrl({ id: 'p1' }, { utm_campaign: 'custom' }).includes('utm_campaign=custom'));
 });
+
+// ---------------------------------------------------------------------------
+// User-profile surface: list / stop one / stop all / add / self-service opt-out
+// ---------------------------------------------------------------------------
+
+test('listSequences groups active, previous and pending with product titles', () => {
+  const { store, engine } = setup();
+  const a = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  store.insertEnrollment({
+    id: 'e2', userId: 'u1', sourceProductId: 'corolla', recommendedProductId: 'rav4',
+    sequenceType: 'cross_sell', currentStep: 3, status: ENROLLMENT_STATUS.COMPLETED, nextSendAt: 0,
+  });
+
+  const view = engine.listSequences('u1');
+  assert.equal(view.active.length, 1);
+  assert.equal(view.active[0].productId, 'accord');
+  assert.equal(view.active[0].productTitle, '2015 Honda Accord');
+  assert.equal(view.previous.length, 1);
+  assert.equal(view.previous[0].productId, 'rav4');
+  assert.equal(view.previous[0].status, ENROLLMENT_STATUS.COMPLETED);
+  assert.equal(view.pending.length, 3); // the 3 still-scheduled rows of the active sequence
+  assert.equal(view.pending[0].productTitle, '2015 Honda Accord');
+});
+
+test('stopSequence (admin) stops one sequence and its rows, leaving others', () => {
+  const { store, engine } = setup();
+  const a = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  const b = engine.enrollForProduct({ userId: 'u1', productId: 'rav4', anchorAt: 1000 });
+  assert.equal(b.enrolled, 1);
+
+  const res = engine.stopSequence(a.enrollment.id, { actor: 'admin' });
+  assert.equal(res.ok, true);
+  assert.equal(res.stopped, 1);
+  assert.equal(res.cancelled, 3);
+  assert.equal(a.enrollment.status, ENROLLMENT_STATUS.CANCELLED);
+  assert.equal(a.enrollment.cancelReason, 'admin');
+  assert.equal(b.enrollment.status, ENROLLMENT_STATUS.ACTIVE); // untouched
+});
+
+test('stopSequence on a non-active sequence is a no-op', () => {
+  const { store, engine } = setup();
+  store.insertEnrollment({
+    id: 'e2', userId: 'u1', sourceProductId: 'corolla', recommendedProductId: 'rav4',
+    sequenceType: 'cross_sell', currentStep: 3, status: ENROLLMENT_STATUS.COMPLETED,
+  });
+  assert.equal(engine.stopSequence('e2').ok, false);
+  assert.equal(engine.stopSequence('e2').reason, 'not-active');
+});
+
+test('stopAllSequences (admin) stops every active sequence without flipping consent', () => {
+  const { store, engine } = setup();
+  engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  engine.enrollForProduct({ userId: 'u1', productId: 'rav4', anchorAt: 0 });
+
+  const res = engine.stopAllSequences('u1', { actor: 'admin' });
+  assert.equal(res.stopped, 2);
+  assert.equal(res.cancelled, 6); // 3 rows each
+  assert.equal(store.isPromotionallyOptedOut('u1'), false); // admin stop does NOT flip consent
+  assert.equal(engine.listSequences('u1').active.length, 0);
+});
+
+test('stopPromotionalEmail (user) stops all and blocks future enrolment', () => {
+  const { store, engine } = setup();
+  engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+
+  const res = engine.stopPromotionalEmail('u1');
+  assert.equal(res.ok, true);
+  assert.equal(res.stopped, 1);
+  assert.equal(res.promotionalOptOut, true);
+  assert.equal(store.isPromotionallyOptedOut('u1'), true);
+
+  // future automatic enrolment is blocked
+  const b = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 999_999 });
+  assert.equal(b.enrolled, 0);
+  assert.equal(b.reason, 'opted-out');
+  // admin add is also blocked by the opt-out
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).reason, 'opted-out');
+});
+
+test('processDue cancels scheduled rows after a promotional opt-out', async () => {
+  const { store, engine } = setup();
+  engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  store.setPromotionalOptOut('u1', true);
+
+  let sent = 0;
+  await engine.processDue({ now: 7 * DAY, send: async () => { sent += 1; } });
+  assert.equal(sent, 0);
+  assert.equal(store.rows[0].status, 'cancelled');
+  assert.equal(store.rows[0].reason, 'promotional-optout');
+});
+
+test('enrollForProduct respects toggle, cap, purchased and disliked', () => {
+  const { store, engine } = setup({ settings: { cross_sell_max_per_user: 1 } });
+  store.markPurchased('u1', 'rav4');
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).reason, 'purchased');
+  store.recordFeedback('u1', 'accord', FEEDBACK_ACTION.DISLIKE);
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'accord' }).reason, 'disliked');
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'nope' }).reason, 'not-found');
+
+  const ok = engine.enrollForProduct({ userId: 'u1', productId: 'react-course', anchorAt: 0 });
+  assert.equal(ok.enrolled, 1);
+  assert.equal(ok.enrollment.recommendedProductId, 'react-course');
+  assert.equal(ok.enrollment.sourceProductId, null); // admin-initiated has no abandonment source
+
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'python-course' }).reason, 'cap');
+});
+
+test('enrollForProduct is blocked while the toggle is OFF', () => {
+  const { engine } = setup({ settings: { cross_sell_automation_enabled: false } });
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'accord' }).reason, 'disabled');
+});
+
+test('searchProduct matches by exact id or title substring', () => {
+  const { engine } = setup();
+  assert.deepEqual(engine.searchProduct('corolla').map((p) => p.id), ['corolla']);
+  assert.deepEqual(engine.searchProduct('honda').map((p) => p.id), ['accord']);
+  assert.deepEqual(engine.searchProduct(''), []);
+  assert.deepEqual(engine.searchProduct('zzz-does-not-exist'), []);
+});
