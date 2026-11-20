@@ -38,9 +38,15 @@ represents what the platform sells:
 Keep it **editable in the admin panel** so operators can correct it.
 
 **Guard clause (mandatory).** *Every* scheduled job, event listener, queue worker, and the
-`maybeEnrollNext` entrypoint MUST check `cross_sell_automation_enabled === true` before dispatching or
-enrolling. The tested `CrossSellEngine.maybeEnrollNext` and `processDue` both return early (`reason:
-'disabled'`) when it is off — the feedback endpoints still record feedback but never re-enroll.
+`maybeEnrollNext` entrypoint MUST check **both** the base `master_enabled` **and**
+`cross_sell_automation_enabled` before dispatching or
+enrolling (the feature ships paused, like the rest of the system). The tested `CrossSellEngine` encodes this as `disabledReason()`:
+`master_enabled = false` → `reason: 'master-paused'`; `cross_sell_automation_enabled = false` → `reason: 'disabled'`. `maybeEnrollNext`, `processDue`, `enrollForProduct` and the dislike re-enrol all short-circuit on it; the feedback endpoints still record feedback but never re-enrol while off.
+
+**Observe-only + idempotent (non-disruption).** The "initial sequence completed → `maybeEnrollNext`"
+listener is observe-only (wrapped in `try/catch`, never breaks the completion flow) and idempotent — a
+replayed event returns `reason: 'duplicate'` instead of double-enrolling (keyed on `(user, source
+product)`). See `references/non-disruption.md` §10.
 
 ### Admin UI (Settings tab)
 

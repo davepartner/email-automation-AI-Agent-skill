@@ -54,6 +54,23 @@ All existing flows must behave exactly as before. Only the new admin menu/UI is 
 - The admin page, admin tables, test-send, and exported data require the app's **admin permission**.
 - Audit admin actions (who toggled, who edited a sequence, who test-sent).
 
+## 10. Intelligent cross-sell (non-disruption)
+
+The cross-sell engine is held to the **same** contract — it is additive, gated, and idempotent:
+
+- **Ships paused, twice.** Cross-sell never fires unless **both** the base `master_enabled` **and**
+  `cross_sell_automation_enabled` are on. The tested `CrossSellEngine.disabledReason()` returns
+  `master-paused` (base off) or `disabled` (feature off), and `maybeEnrollNext`, `processDue`,
+  `enrollForProduct` and the dislike re-enrol all short-circuit before enrolling/dispatching.
+- **Observe-only trigger.** The "initial sequence completed → `maybeEnrollNext`" listener must be wrapped
+  in `try/catch` and never break the sequence-completion flow (same rule as every other hook).
+- **Idempotent.** Replaying the completed event never double-enrols — `maybeEnrollNext` is keyed on
+  `(user, source product)` and returns `duplicate`; `enrollForProduct` is keyed on `(user, product)`.
+- **Additive schema.** `email_sequence_enrollments`, `user_product_feedback`, `email_feedback_tokens`,
+  and new columns on the skill's own `email_settings` — no existing table is altered or dropped.
+- **Rollback.** Dropping those tables and the two feedback routes removes the feature cleanly; the
+  base sequences and mail connection are untouched.
+
 ## Checklist
 
 - [ ] DB backed up; mailer config noted.
@@ -64,3 +81,4 @@ All existing flows must behave exactly as before. Only the new admin menu/UI is 
 - [ ] Dry-run + preview + test-send pass; stop-conditions tested.
 - [ ] Rollback drill executed and documented.
 - [ ] Admin permission enforced + actions audited.
+- [ ] Cross-sell: gated by master + toggle; observe-only listener; idempotent enrolment (94 tests).

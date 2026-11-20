@@ -45,6 +45,20 @@ features, uses the platform's **product noun**, and enrols the user in a **hand-
 - Docs updated: `SKILL.md` (deliverable 12 + reference), `README.md` (feature + structure + keywords),
   `references/admin-ui.md` (profile surface cross-ref), `CHANGELOG.md`.
 
+### Non-disruption / install-safety hardening
+
+- **Ships paused, twice.** `DEFAULT_SETTINGS` now carries `master_enabled: false`; `CrossSellEngine`
+  gained `isEnabled()` / `disabledReason()` and every entrypoint (`maybeEnrollNext`, `processDue`,
+  `enrollForProduct`, the dislike re-enrol) short-circuits unless **both** the base master switch and the
+  feature toggle are on (`master-paused` / `disabled`).
+- **Idempotent enrolment.** `maybeEnrollNext` is keyed on `(user, source product)` and `enrollForProduct`
+  on `(user, product)` — a replayed "sequence completed" event or a double admin-add returns `duplicate`
+  instead of double-enrolling.
+- **Observe-only listener** documented: the "sequence completed → cross-sell" hook is wrapped in
+  `try/catch` and never breaks the completion flow.
+- Docs: `references/non-disruption.md` §10 + checklist, `references/cross-sell.md` §1 guard clause,
+  `SKILL.md` rule 15 + non-disruption contract. **94 tests pass** (was 91).
+
 ## 2026-11-11 — Correctness: calendar ordering, timezones, purchases, cap, tokens
 
 Hardening the payday work after a review. Behaviour changes, each covered by a test.

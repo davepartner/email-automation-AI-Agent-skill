@@ -30,6 +30,7 @@ export const ENROLLMENT_STATUS = Object.freeze({
 export const FEEDBACK_ACTION = Object.freeze({ LIKE: 'like', DISLIKE: 'dislike' });
 
 export const DEFAULT_SETTINGS = Object.freeze({
+  master_enabled: false, // the base "ships paused" master switch — cross-sell never fires while off
   cross_sell_automation_enabled: true,
   cross_sell_cooldown_days: 7,
   cross_sell_reenroll_delay_hours: 24, // dislike → next product starts 24–48h later
@@ -390,6 +391,27 @@ export class CrossSellStore {
     ).length;
   }
 
+  /** Idempotency: is this user already in an active cross-sell for this (source, recommended) pair? */
+  hasActiveCrossSell(userId, recommendedProductId, sourceProductId = null) {
+    return this.enrollmentsFor(userId).some(
+      (e) =>
+        e.sequenceType === SEQUENCE_TYPE.CROSS_SELL &&
+        [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PAUSED].includes(e.status) &&
+        e.recommendedProductId === recommendedProductId &&
+        (sourceProductId == null || e.sourceProductId === sourceProductId),
+    );
+  }
+
+  /** Idempotency on the *trigger*: one active cross-sell per (user, source product). */
+  hasActiveCrossSellForSource(userId, sourceProductId) {
+    return this.enrollmentsFor(userId).some(
+      (e) =>
+        e.sequenceType === SEQUENCE_TYPE.CROSS_SELL &&
+        [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PAUSED].includes(e.status) &&
+        e.sourceProductId === sourceProductId,
+    );
+  }
+
   scheduleRow(row) {
     this.rows.push({ status: 'scheduled', ...row });
   }
@@ -454,6 +476,18 @@ export class CrossSellEngine {
     return this.store.settings;
   }
 
+  /** Cross-sell only runs when BOTH the base master switch and the feature toggle are on. */
+  isEnabled() {
+    return this.settings.master_enabled === true && this.settings.cross_sell_automation_enabled === true;
+  }
+
+  /** Why cross-sell is blocked, or null when enabled (used for `reason` in return values). */
+  disabledReason() {
+    if (this.settings.master_enabled !== true) return 'master-paused';
+    if (this.settings.cross_sell_automation_enabled !== true) return 'disabled';
+    return null;
+  }
+
   noun(plural = false) {
     return plural ? this.settings.platform_product_noun_plural : this.settings.platform_product_noun_singular;
   }
@@ -477,15 +511,18 @@ export class CrossSellEngine {
    * first email lands after `cross_sell_cooldown_days`.
    */
   maybeEnrollNext({ userId, sourceProductId, anchorAt = this.now() }) {
-    // Guard: the global toggle is checked before ANY enrolment or dispatch.
-    if (this.settings.cross_sell_automation_enabled !== true) {
-      return { enrolled: 0, reason: 'disabled' };
-    }
+    // Guard: never enrol while the master switch or feature toggle is off.
+    const off = this.disabledReason();
+    if (off) return { enrolled: 0, reason: off };
     if (this.store.isPromotionallyOptedOut(userId)) {
       return { enrolled: 0, reason: 'opted-out' };
     }
     if (this.store.activeCrossSellCount(userId) >= this.settings.cross_sell_max_per_user) {
       return { enrolled: 0, reason: 'cap' };
+    }
+    // Idempotency on the trigger: a replay of "sequence completed" must not double-enrol.
+    if (this.store.hasActiveCrossSellForSource(userId, sourceProductId)) {
+      return { enrolled: 0, reason: 'duplicate' };
     }
     const candidate = this.matcher.findNextBest(sourceProductId, { exclude: this.exclusionsFor(userId) });
     if (!candidate) return { enrolled: 0, reason: 'no-eligible' };
@@ -576,7 +613,7 @@ export class CrossSellEngine {
 
     const product = this.matcher.get(e.recommendedProductId);
     let next = null;
-    if (this.settings.cross_sell_automation_enabled === true && !this.store.isPromotionallyOptedOut(e.userId)) {
+    if (this.isEnabled() && !this.store.isPromotionallyOptedOut(e.userId)) {
       const candidate = this.matcher.findNextBest(e.sourceProductId, { exclude: this.exclusionsFor(e.userId) });
       if (candidate && this.store.activeCrossSellCount(e.userId) < this.settings.cross_sell_max_per_user) {
         const firstSendAt = now + this.settings.cross_sell_reenroll_delay_hours * HOUR_MS;
@@ -601,10 +638,9 @@ export class CrossSellEngine {
 
   /** The worker entrypoint: send every due cross-sell email and advance the sequence. */
   async processDue({ send = async () => {}, now = this.now() } = {}) {
-    // Guard: never dispatch a cross-sell email while the toggle is OFF.
-    if (this.settings.cross_sell_automation_enabled !== true) {
-      return { sent: 0, reason: 'disabled' };
-    }
+    // Guard: never dispatch a cross-sell email while the master switch or toggle is off.
+    const off = this.disabledReason();
+    if (off) return { sent: 0, reason: off };
     let sent = 0;
     for (const row of this.store.dueRows(now)) {
       const e = this.store.getEnrollment(row.enrollmentId);
@@ -734,7 +770,8 @@ export class CrossSellEngine {
    * opt-out, the per-user cap, and the dislike/purchase blacklist.
    */
   enrollForProduct({ userId, productId, sourceProductId = null, anchorAt = this.now() }) {
-    if (this.settings.cross_sell_automation_enabled !== true) return { enrolled: 0, reason: 'disabled' };
+    const off = this.disabledReason();
+    if (off) return { enrolled: 0, reason: off };
     if (this.store.isPromotionallyOptedOut(userId)) return { enrolled: 0, reason: 'opted-out' };
     if (this.store.activeCrossSellCount(userId) >= this.settings.cross_sell_max_per_user) {
       return { enrolled: 0, reason: 'cap' };
@@ -743,6 +780,10 @@ export class CrossSellEngine {
     if (!product) return { enrolled: 0, reason: 'not-found' };
     if (this.store.purchased.get(userId)?.has(productId)) return { enrolled: 0, reason: 'purchased' };
     if (this.store.isDisliked(userId, productId)) return { enrolled: 0, reason: 'disliked' };
+    // Idempotency: adding the same product twice is a no-op.
+    if (this.store.hasActiveCrossSell(userId, productId, sourceProductId)) {
+      return { enrolled: 0, reason: 'duplicate' };
+    }
 
     const firstSendAt = anchorAt; // admin-initiated: start immediately (worker applies the send window)
     return this._enroll({ userId, sourceProductId, recommendedProductId: productId, firstSendAt });

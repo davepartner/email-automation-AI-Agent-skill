@@ -38,7 +38,8 @@ function setup(overrides = {}) {
     coBought: overrides.coBought ?? new Map(),
     coViewed: overrides.coViewed ?? new Map(),
   });
-  const store = new CrossSellStore(overrides.settings ?? {});
+  // Tests simulate an admin who has turned the system on: master switch + feature toggle.
+  const store = new CrossSellStore({ master_enabled: true, ...(overrides.settings ?? {}) });
   store.setUser('u1', { email: 'u1@example.com', firstName: 'Ada' });
   const engine = new CrossSellEngine({ store, matcher, now: overrides.now ?? (() => Date.now()) });
   return { matcher, store, engine, products };
@@ -139,6 +140,43 @@ test('admin toggle OFF blocks enrolment and dispatch', async () => {
   const r = await engine.processDue({ now: 0, send: async () => { sent += 1; } });
   assert.equal(r.reason, 'disabled');
   assert.equal(sent, 0);
+});
+
+test('master switch OFF (ships paused) blocks enrolment and dispatch', async () => {
+  const { store, engine } = setup({ settings: { master_enabled: false } });
+  assert.equal(engine.isEnabled(), false);
+
+  const res = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  assert.equal(res.enrolled, 0);
+  assert.equal(res.reason, 'master-paused');
+  assert.equal(store.enrollments.size, 0);
+
+  // Even a pre-existing scheduled row must not send while the master switch is off.
+  store.insertEnrollment({ id: 'e1', userId: 'u1', sourceProductId: 'corolla', recommendedProductId: 'accord', sequenceType: 'cross_sell', currentStep: 1, status: ENROLLMENT_STATUS.ACTIVE });
+  store.scheduleRow({ id: 'e1:step-1', enrollmentId: 'e1', userId: 'u1', step: 1, dueAt: 0, productId: 'accord' });
+  let sent = 0;
+  const r = await engine.processDue({ now: 0, send: async () => { sent += 1; } });
+  assert.equal(r.reason, 'master-paused');
+  assert.equal(sent, 0);
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).reason, 'master-paused');
+});
+
+test('maybeEnrollNext is idempotent — replaying the completed event never double-enrols', () => {
+  const { store, engine } = setup();
+  const a = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
+  assert.equal(a.enrolled, 1);
+  const replay = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 1000 });
+  assert.equal(replay.enrolled, 0);
+  assert.equal(replay.reason, 'duplicate');
+  assert.equal(store.enrollments.size, 1);
+  assert.equal(store.rows.length, 3); // still one 3-email sequence
+});
+
+test('enrollForProduct is idempotent for the same product', () => {
+  const { store, engine } = setup();
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).enrolled, 1);
+  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).reason, 'duplicate');
+  assert.equal(store.enrollments.size, 1);
 });
 
 // ---------------------------------------------------------------------------
