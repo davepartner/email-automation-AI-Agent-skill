@@ -38,10 +38,11 @@ represents what the platform sells:
 Keep it **editable in the admin panel** so operators can correct it.
 
 **Guard clause (mandatory).** *Every* scheduled job, event listener, queue worker, and the
-`maybeEnrollNext` entrypoint MUST check **both** the base `master_enabled` **and**
-`cross_sell_automation_enabled` before dispatching or
-enrolling (the feature ships paused, like the rest of the system). The tested `CrossSellEngine` encodes this as `disabledReason()`:
-`master_enabled = false` → `reason: 'master-paused'`; `cross_sell_automation_enabled = false` → `reason: 'disabled'`. `maybeEnrollNext`, `processDue`, `enrollForProduct` and the dislike re-enrol all short-circuit on it; the feedback endpoints still record feedback but never re-enrol while off.
+`maybeEnrollNext` entrypoint MUST check `cross_sell_automation_enabled === true` before dispatching or
+enrolling. The feature **ships active** (`true`); the admin pauses it with the Settings toggle. The
+tested `CrossSellEngine.disabledReason()` returns `'disabled'` when paused, and `maybeEnrollNext`,
+`processDue`, `enrollForProduct` and the dislike re-enrol all short-circuit on it; the feedback
+endpoints still record feedback but never re-enrol while paused.
 
 **Observe-only + idempotent (non-disruption).** The "initial sequence completed → `maybeEnrollNext`"
 listener is observe-only (wrapped in `try/catch`, never breaks the completion flow) and idempotent — a
@@ -52,7 +53,7 @@ product)`). See `references/non-disruption.md` §10.
 
 A clean **Cross-sell** panel in `Settings`:
 
-- **Master toggle** — *"Intelligent cross-sell sequences"* **ON / OFF**.
+- **Pause switch** — *"Intelligent cross-sell sequences"* **ON / OFF** (ships **ON**; admin can pause).
 - **Cooldown** (days, default 7) · **Re-enrol delay** (24–48h) · **Max per user** (default 5).
 - **Product noun** (singular + plural) — live-preview the subject line below the input.
 - Optional **per-product opt-out** (see the base opt-out) — never recommend a product the admin excluded.

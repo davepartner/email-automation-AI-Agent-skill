@@ -58,10 +58,10 @@ All existing flows must behave exactly as before. Only the new admin menu/UI is 
 
 The cross-sell engine is held to the **same** contract — it is additive, gated, and idempotent:
 
-- **Ships paused, twice.** Cross-sell never fires unless **both** the base `master_enabled` **and**
-  `cross_sell_automation_enabled` are on. The tested `CrossSellEngine.disabledReason()` returns
-  `master-paused` (base off) or `disabled` (feature off), and `maybeEnrollNext`, `processDue`,
-  `enrollForProduct` and the dislike re-enrol all short-circuit before enrolling/dispatching.
+- **Ships active, pauseable.** Cross-sell ships **active** (`cross_sell_automation_enabled = true`); the
+  admin pauses it with the Settings toggle. The tested `CrossSellEngine` short-circuits on
+  `disabledReason()` (`disabled`) in `maybeEnrollNext`, `processDue`, `enrollForProduct` and the dislike
+  re-enrol — so pausing stops every send instantly without unenrolling anyone.
 - **Observe-only trigger.** The "initial sequence completed → `maybeEnrollNext`" listener must be wrapped
   in `try/catch` and never break the sequence-completion flow (same rule as every other hook).
 - **Idempotent.** Replaying the completed event never double-enrols — `maybeEnrollNext` is keyed on
@@ -81,4 +81,4 @@ The cross-sell engine is held to the **same** contract — it is additive, gated
 - [ ] Dry-run + preview + test-send pass; stop-conditions tested.
 - [ ] Rollback drill executed and documented.
 - [ ] Admin permission enforced + actions audited.
-- [ ] Cross-sell: gated by master + toggle; observe-only listener; idempotent enrolment (94 tests).
+- [ ] Cross-sell: ships active with an admin pause toggle; observe-only listener; idempotent enrolment (94 tests).

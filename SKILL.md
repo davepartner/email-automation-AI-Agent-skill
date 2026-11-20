@@ -201,9 +201,9 @@ user in a **hand-typed 3-email sequence** with signed **Like / Dislike** links. 
     `references/admin-ui.md` §Access control and `references/non-disruption.md` §9.
 15. **Intelligent cross-sell is toggle-gated and noun-aware.** Map the host's Product model + a
     singular/plural **product noun** (`course`, `car`, `destination`, `property`, `product`) to
-    `ProductSimilarityMatcher`, and keep it editable in Settings. **Every** cross-sell job, event
-    listener, and queue worker checks **both** the base `master_enabled` **and**
-    `cross_sell_automation_enabled` before enrolling or dispatching (ships paused). The
+    `ProductSimilarityMatcher`, and keep it editable in Settings. Cross-sell **ships active**
+    (`cross_sell_automation_enabled = true`); the admin pauses it with the Settings toggle, and every
+    cross-sell job, listener and worker checks that toggle before enrolling or dispatching. The
     "initial sequence completed → enrol" listener is observe-only (`try/catch`) and **idempotent**
     (replay returns `duplicate`, never double-enrols). Like/Dislike are **signed, single-use**
     endpoints (no login required) — Like redirects to checkout, Dislike blacklists the product and
@@ -221,9 +221,9 @@ user in a **hand-typed 3-email sequence** with signed **Like / Dislike** links. 
 - **Hooks are observe-only and wrapped in `try/catch`** — a failing observer never breaks
   registration/login/checkout/payment.
 - **Ships paused** with a **global kill switch**; reuse the existing mail connection.
-- **Cross-sell is gated twice** (base `master_enabled` **and** `cross_sell_automation_enabled`) and its
-  enrolment is **idempotent** (event replay returns `duplicate`), so it can never fire during install or
-  double-send. (`references/non-disruption.md` §10.)
+- **Cross-sell ships active with an admin pause toggle** and its enrolment is **idempotent** (event replay
+  returns `duplicate`), so it never double-sends; the observe-only listener never breaks existing flows.
+  (`references/non-disruption.md` §10.)
 - **Smoke test** all five core flows after install; run a **rollback drill** (disable → drop tables →
   confirm untouched).
 

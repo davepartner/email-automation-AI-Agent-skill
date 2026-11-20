@@ -38,8 +38,8 @@ function setup(overrides = {}) {
     coBought: overrides.coBought ?? new Map(),
     coViewed: overrides.coViewed ?? new Map(),
   });
-  // Tests simulate an admin who has turned the system on: master switch + feature toggle.
-  const store = new CrossSellStore({ master_enabled: true, ...(overrides.settings ?? {}) });
+  // Cross-sell ships ACTIVE by default; a test can pass settings to pause it.
+  const store = new CrossSellStore(overrides.settings ?? {});
   store.setUser('u1', { email: 'u1@example.com', firstName: 'Ada' });
   const engine = new CrossSellEngine({ store, matcher, now: overrides.now ?? (() => Date.now()) });
   return { matcher, store, engine, products };
@@ -142,23 +142,23 @@ test('admin toggle OFF blocks enrolment and dispatch', async () => {
   assert.equal(sent, 0);
 });
 
-test('master switch OFF (ships paused) blocks enrolment and dispatch', async () => {
-  const { store, engine } = setup({ settings: { master_enabled: false } });
-  assert.equal(engine.isEnabled(), false);
-
+test('cross-sell ships ACTIVE by default; the admin toggle pauses it', async () => {
+  const { store, engine } = setup();
+  // No settings override → active out of the box.
+  assert.equal(engine.isEnabled(), true);
   const res = engine.maybeEnrollNext({ userId: 'u1', sourceProductId: 'corolla', anchorAt: 0 });
-  assert.equal(res.enrolled, 0);
-  assert.equal(res.reason, 'master-paused');
-  assert.equal(store.enrollments.size, 0);
+  assert.equal(res.enrolled, 1);
 
-  // Even a pre-existing scheduled row must not send while the master switch is off.
-  store.insertEnrollment({ id: 'e1', userId: 'u1', sourceProductId: 'corolla', recommendedProductId: 'accord', sequenceType: 'cross_sell', currentStep: 1, status: ENROLLMENT_STATUS.ACTIVE });
-  store.scheduleRow({ id: 'e1:step-1', enrollmentId: 'e1', userId: 'u1', step: 1, dueAt: 0, productId: 'accord' });
+  // Admin pauses it → future enrolment + dispatch are blocked.
+  store.settings.cross_sell_automation_enabled = false;
+  assert.equal(engine.isEnabled(), false);
+  const paused = engine.maybeEnrollNext({ userId: 'u2', sourceProductId: 'corolla', anchorAt: 0 });
+  assert.equal(paused.enrolled, 0);
+  assert.equal(paused.reason, 'disabled');
   let sent = 0;
-  const r = await engine.processDue({ now: 0, send: async () => { sent += 1; } });
-  assert.equal(r.reason, 'master-paused');
+  const r = await engine.processDue({ now: 7 * DAY, send: async () => { sent += 1; } });
+  assert.equal(r.reason, 'disabled');
   assert.equal(sent, 0);
-  assert.equal(engine.enrollForProduct({ userId: 'u1', productId: 'rav4' }).reason, 'master-paused');
 });
 
 test('maybeEnrollNext is idempotent — replaying the completed event never double-enrols', () => {

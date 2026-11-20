@@ -30,8 +30,7 @@ export const ENROLLMENT_STATUS = Object.freeze({
 export const FEEDBACK_ACTION = Object.freeze({ LIKE: 'like', DISLIKE: 'dislike' });
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  master_enabled: false, // the base "ships paused" master switch — cross-sell never fires while off
-  cross_sell_automation_enabled: true,
+  cross_sell_automation_enabled: true, // ships ACTIVE; the admin can pause via the Settings toggle
   cross_sell_cooldown_days: 7,
   cross_sell_reenroll_delay_hours: 24, // dislike → next product starts 24–48h later
   cross_sell_max_per_user: 5, // configurable cap on cross-sell sequences per user
@@ -476,14 +475,13 @@ export class CrossSellEngine {
     return this.store.settings;
   }
 
-  /** Cross-sell only runs when BOTH the base master switch and the feature toggle are on. */
+  /** Cross-sell runs unless the admin has paused it (single toggle). */
   isEnabled() {
-    return this.settings.master_enabled === true && this.settings.cross_sell_automation_enabled === true;
+    return this.settings.cross_sell_automation_enabled === true;
   }
 
   /** Why cross-sell is blocked, or null when enabled (used for `reason` in return values). */
   disabledReason() {
-    if (this.settings.master_enabled !== true) return 'master-paused';
     if (this.settings.cross_sell_automation_enabled !== true) return 'disabled';
     return null;
   }

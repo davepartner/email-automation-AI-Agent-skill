@@ -157,7 +157,7 @@
       "name": "Intelligent cross-sell (similar product)",
       "kind": "nurture",
       "priority": 6,
-      "enabled": false,
+      "enabled": true,
       "default_discount_pct": 0,
       "trigger": { "event": "initial_sequence_completed", "condition": "cross_sell_automation_enabled" },
       "stop": ["like", "dislike", "purchase", "unsubscribe"],

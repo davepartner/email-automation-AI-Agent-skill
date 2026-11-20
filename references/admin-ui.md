@@ -260,9 +260,9 @@ If a channel has no provider/credentials, any sequence using it is blocked and a
 A small panel inside Settings for the post-abandonment recommendation loop
 (`references/cross-sell.md`):
 
-- **Master toggle** — *"Intelligent cross-sell sequences"* **ON / OFF** (maps to
-  `cross_sell_automation_enabled`). Ships **ON by default** but respects the overall master switch; the
-  sequence itself still ships paused until the admin turns the sequence on.
+- **Pause switch** — *"Intelligent cross-sell sequences"* **ON / OFF** (maps to
+  `cross_sell_automation_enabled`). Ships **ON (active)**; the admin can pause it any time — pausing
+  stops every send instantly without unenrolling anyone.
 - **Cooldown** (days, default 7) — the pause between the initial sequence finishing and Email 1.
 - **Re-enrol delay** (hours, 24–48) — how long after a Dislike the next product's sequence starts.
 - **Max per user** (default 5) — cap on cross-sell sequences per user.

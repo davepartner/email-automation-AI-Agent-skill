@@ -47,17 +47,32 @@ features, uses the platform's **product noun**, and enrols the user in a **hand-
 
 ### Non-disruption / install-safety hardening
 
-- **Ships paused, twice.** `DEFAULT_SETTINGS` now carries `master_enabled: false`; `CrossSellEngine`
-  gained `isEnabled()` / `disabledReason()` and every entrypoint (`maybeEnrollNext`, `processDue`,
-  `enrollForProduct`, the dislike re-enrol) short-circuits unless **both** the base master switch and the
-  feature toggle are on (`master-paused` / `disabled`).
+- **Ships active, pauseable.** Cross-sell ships **active** (`cross_sell_automation_enabled = true`); the
+  admin pauses it with the Settings toggle. `CrossSellEngine.isEnabled()` / `disabledReason()` gate every
+  entrypoint (`maybeEnrollNext`, `processDue`, `enrollForProduct`, the dislike re-enrol) on that single
+  toggle, so pausing stops every send instantly without unenrolling anyone.
 - **Idempotent enrolment.** `maybeEnrollNext` is keyed on `(user, source product)` and `enrollForProduct`
   on `(user, product)` — a replayed "sequence completed" event or a double admin-add returns `duplicate`
   instead of double-enrolling.
 - **Observe-only listener** documented: the "sequence completed → cross-sell" hook is wrapped in
   `try/catch` and never breaks the completion flow.
 - Docs: `references/non-disruption.md` §10 + checklist, `references/cross-sell.md` §1 guard clause,
-  `SKILL.md` rule 15 + non-disruption contract. **94 tests pass** (was 91).
+  `SKILL.md` rule 15 + non-disruption contract, `sequence-config.json` (cross_sell `enabled: true`).
+  **94 tests pass**.
+
+### Admin UI redesign (`examples/admin-preview.html`)
+
+- Rebuilt the preview as a **complete, interactive** admin surface: three working tabs, accessible
+  **toggle switches** (`role="switch"`), a live subject-line preview, and all three panes filled.
+- Added the **Settings** pane — master switch, sender fields, limits/quiet hours, channels, and the
+  **Intelligent cross-sell** panel (pause switch + cooldown / re-enrol / cap + product noun with a live
+  subject preview).
+- Added the **Users & recipients** pane — search, recipients table, and a **user-profile email
+  sequences** block (Active / Pending / Previous with Stop sequence · Stop all · Add-to-sequence product
+  search).
+- Applied the `ui-ux-20-laws` pass: 44px targets, one accent CTA, destructive actions in red, bounded
+  panels (Common Region), 3-tab chunking (Hick's), status always icon + text, focus rings, dark mode,
+  `prefers-reduced-motion`, and a `Trace:` block.
 
 ## 2026-11-11 — Correctness: calendar ordering, timezones, purchases, cap, tokens
 
