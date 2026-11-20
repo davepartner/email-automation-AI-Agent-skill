@@ -132,6 +132,32 @@ DELETE FROM email_scheduled WHERE status IN ('sent','cancelled','failed') AND du
 - **Ordering:** `dueScheduled` sorts by `priority` then `due_at`, so the daily cap always defers the
   least important email.
 
+## Intelligent cross-sell (post-abandonment)
+
+When the initial abandonment sequence for a product completes with no purchase, evaluate the next similar
+product and enrol a fresh 3-email sequence. Core: `examples/cross-sell.mjs` (see `references/cross-sell.md`).
+
+- **Guard first:** the job/worker/listener returns early when `cross_sell_automation_enabled != true`.
+- **Match** (exclude purchased / completed / disliked / active):
+
+```sql
+SELECT p.*, similarity(p, $source) AS score
+FROM products p
+WHERE p.id != $source
+  AND p.id NOT IN (SELECT product_id FROM user_product_feedback WHERE user_id = $user AND action = 'dislike')
+  AND p.id NOT IN (SELECT product_id FROM orders WHERE user_id = $user)
+ORDER BY score DESC
+LIMIT 1;
+```
+
+- **Enrol** (`CrossSellEngine.maybeEnrollNext`): `first_send_at = completed_at + cooldown_days`; schedule
+  steps at +0 / +3 / +7 days (Emails 1/2/3).
+- **Like / Dislike:** signed HMAC token in the CTA (`signFeedbackToken` / `verifyFeedbackToken`), jti is
+  single-use. Like → `status='liked'` + cancel rows + redirect. Dislike → `status='disliked'` + blacklist
+  + cancel rows + `maybeEnrollNext(anchor = now + reenroll_delay_hours)`.
+- **Idempotency:** enrolment is keyed by `(user_id, source_product_id, recommended_product_id)`; replaying
+  the "sequence completed" event never double-enrols.
+
 ## Batching & scale
 
 - Process in **batches** (e.g. 100–500/s) so a big backlog doesn't time out.

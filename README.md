@@ -30,7 +30,7 @@ nothing breaks and nothing sends until you say so.
 
 | Piece | What the admin gets |
 |-------|---------------------|
-| 📨 **Sequences** | 9 lifecycle sequences, each on/off, with editable delays, discounts, and copy |
+| 📨 **Sequences** | 10 lifecycle sequences, each on/off, with editable delays, discounts, and copy |
 | ✍️ **Template editor** | a **free, self-hosted WYSIWYG editor** (TinyMCE Community; or Quill/TipTap/Summernote/GrapesJS) to edit each email body — email-safe HTML, merge tokens, preview + test-send |
 | 🧩 **Editable sequences** | admin can **add / reorder / delete steps**; a new step also schedules for active enrolments |
 | ▶️ **Sequence controls** | **Start / Pause / Delete** each sequence — delete requires typing **`delete`** in a confirmation modal, then soft-deletes (restorable) |
@@ -39,6 +39,7 @@ nothing breaks and nothing sends until you say so.
 | 🧠 **Platform-aware sequences** | scouts your app's purpose and adds the reminders that fit — **email verification, profile completion, onboarding, KYC, billing/trial, booking, renewal**… |
 | 📣 **Multi-channel** | **email · push · WhatsApp · SMS** — reuses existing providers or lets the admin add API keys; users opt in per channel |
 | 💰 **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
+| 🎯 **Intelligent cross-sell** | after a **7-day cooldown**, recommend the **next most similar product** (metadata → semantic → collaborative matching) in a hand-typed 3-email sequence with signed **Like / Dislike** links that re-enrol or redirect |
 | 🩺 **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
 | 👤 **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
 | 🗂️ **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |
@@ -70,6 +71,7 @@ are in `references/iconography.md`. **See it rendered:** `examples/admin-preview
 | 7 | 🔁 **Win-back** | Inactive 30/60/90d | neutral → value → "we'll stop" | optional |
 | 8 | 📦 **Replenishment** | Consumable product | ~day 45–60 | optional |
 | 9 | 💸 **Payday re-engage** | Pending product lead ≥ 7 days | 27th → last day → 2nd | optional |
+| 10 | 🎯 **Intelligent cross-sell** | Initial sequence ends, no purchase | **7d cooldown → 7 / 10 / 14** with Like/Dislike | optional |
 
 **Payday is a nurture sequence** — per product, runs alongside the cart reminder, and shares the
 one-email-per-day cap so it never clashes. On purchase the user moves **Leads → Paid** and enters the
@@ -77,6 +79,14 @@ paid-product sequences. A product reminder's "unsubscribe" opts out of **that on
 product** (shown as "Manually exited this sequence" beside the caret).
 
 **Discount rule:** default **0%** — and at 0% the email **never mentions a discount**.
+
+**Intelligent cross-sell** (sequence 10) is the post-abandonment recommendation loop: when the initial
+sequence finishes with no purchase, the system waits a **7-day cooldown**, picks the **next most similar
+product** (shared category/tags/price → keyword/semantic overlap → collaborative filtering), extracts its
+features, uses the platform's **product noun** (`course` / `car` / `destination` / `property`), and sends
+a **hand-typed 3-email sequence** (days 7 / 10 / 14) with signed **Like / Dislike** links — Like redirects
+to checkout, Dislike blacklists the product and re-enrols the next one. Spec: `references/cross-sell.md`;
+code: `examples/cross-sell.mjs`.
 
 ---
 
@@ -137,10 +147,14 @@ references/
 ├── email-design-laws.md              # the 20 laws applied to the email canvas
 ├── iconography.md                    # one icon family, sizes, accessibility, full page icon map
 ├── health-checks.md                  # paused / cron / transport warnings
+├── cross-sell.md                     # intelligent cross-sell: matching, signed Like/Dislike, migrations, state machine
 └── reference-implementation.md       # engine pseudocode + SQL (locking, reaper, attribution)
 examples/
 ├── worker.mjs                        # executable scheduler/worker core
 ├── worker.test.mjs                   # tests: idempotency, consent, holdout, precedence, exclusions…
+├── cross-sell.mjs                    # ProductSimilarityMatcher + CrossSellEngine + signed feedback tokens
+├── cross-sell.test.mjs               # tests: Like/Dislike, re-enrol, toggle OFF, cooldown, exclusions
+├── cross-sell-templates.md           # the 3 hand-typed cross-sell emails (Like/Dislike links)
 ├── schedule.mjs                      # calendar (payday) math: 27th / last day / 2nd
 ├── leads.mjs                         # per-product lead → paid transition
 ├── icons.svg                         # ready Lucide-style icon sprite
@@ -233,6 +247,8 @@ abandoned checkout email, product page abandonment, welcome email sequence, onbo
 re-engagement email, win-back email, reactivation email, upsell email, cross-sell email, post-purchase
 email, review request email, replenishment reminder, user retention, increase retention, repeat
 purchase, conversion optimization, funnel emails, sales funnel automation, customer.io alternative,
+intelligent cross-sell, product recommendation email, similar product sequence, product similarity,
+collaborative filtering, like dislike feedback, signed feedback token, product noun, cross-sell cooldown,
 klaviyo alternative, mautic alternative, dittofeed alternative, email marketing automation, cron email,
 scheduled emails, stop conditions, frequency cap, quiet hours, personalization, one-to-one email,
 transactional vs marketing email, conversion attribution, email statistics, email analytics.

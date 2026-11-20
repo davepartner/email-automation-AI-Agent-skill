@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-11-20 — Intelligent cross-sell: similar-product recommendation sequences
+
+New capability: when the initial abandonment sequence finishes with no purchase, the automation no
+longer stops. After a **7-day cooldown** it picks the **next most similar product**, extracts its
+features, uses the platform's **product noun**, and enrols the user in a **hand-typed 3-email sequence**
+(7 / 10 / 14) with signed **Like / Dislike** links.
+
+- **`examples/cross-sell.mjs`** (new, tested): `ProductSimilarityMatcher` (multi-tier fallback —
+  metadata/taxonomy → keyword/semantic overlap → collaborative filtering), feature extraction,
+  `CrossSellEngine` (cooldown, enrolment, Like/Dislike, step cadence, per-user cap), and signed
+  single-use feedback tokens (`signFeedbackToken` / `verifyFeedbackToken`).
+- **`examples/cross-sell.test.mjs`** (new, 22 tests): admin toggle OFF, cooldown + cadence (7/10/14),
+  exclusions (purchased / completed / disliked), Tier 1/2/3 matching, Like (stop + redirect), Dislike
+  (blacklist + re-enrol), cap, no-eligible, and token verify/tamper/expiry/replay. **82 tests pass**
+  (was 60).
+- **Schema** (`examples/data-model.md`): `email_sequence_enrollments`, `user_product_feedback`,
+  `email_feedback_tokens`, plus cross-sell settings columns on `email_settings`
+  (`cross_sell_automation_enabled`, `cross_sell_cooldown_days`, `cross_sell_reenroll_delay_hours`,
+  `cross_sell_max_per_user`, `platform_product_noun_singular/plural`).
+- **`references/cross-sell.md`** (new): admin toggle, Laravel migrations + Eloquent relationships, signed
+  Like/Dislike controller routes, the 7-day cooldown state machine, product-noun mapping, and test map.
+- **`examples/cross-sell-templates.md`** (new): the exact 3 hand-typed emails with Like/Dislike inline
+  links and merge tokens.
+- Docs updated: `SKILL.md` (sequence 10 + non-negotiable rule 15 + deliverable), `README.md` (feature,
+  sequence table, structure, keywords), `references/sequences.md` (section 10 + precedence),
+  `references/admin-ui.md` (Cross-sell Settings panel), `references/quickstart.md` (cross-sell path),
+  `references/reference-implementation.md` (cross-sell SQL), `examples/sequence-config.json`
+  (settings + templates + sequence).
+
 ## 2026-11-11 — Correctness: calendar ordering, timezones, purchases, cap, tokens
 
 Hardening the payday work after a review. Behaviour changes, each covered by a test.

@@ -15,8 +15,9 @@ The minimal path to a working Email Automation section. Read the other reference
 4. **Worker + scheduler** (`reference-implementation.md` §3–4) — claim due rows atomically
    (`FOR UPDATE SKIP LOCKED`), stop-check, frequency cap, quiet hours, send via the app's mail, log.
    Use `examples/worker.mjs` as the tested decision core.
-5. **Sequences** (`sequences.md`) — start with the default 9 + platform-derived ones; set `kind`
-   (`marketing`/`transactional`/`nurture`), priority, and discounts (0% = hidden).
+5. **Sequences** (`sequences.md`) — start with the default 9 + the **intelligent cross-sell** sequence
+   (#10) + platform-derived ones; set `kind` (`marketing`/`transactional`/`nurture`), priority, and
+   discounts (0% = hidden).
 6. **Admin UI** (`admin-ui.md`) — **3 tabs** (Sequences · Users & recipients · Settings); Sequences
    opens with KPIs, emails/day + sales/day charts and the provider plan/quota; a humanized readiness
    checklist; **start / pause / delete** (type `delete`); users search / cancel one email / exclude. Run the UI/UX audit on the page **and
@@ -31,8 +32,19 @@ The minimal path to a working Email Automation section. Read the other reference
    bounce/complaint webhooks, retention.
 9. **Non-disruption** (`non-disruption.md`) — backup, reversible migrations, smoke test, rollback
    drill. Ship **paused**.
-10. **Verify** — `npm install && npm test` (worker + renderer tests), then dry-run + test-send, then
-    turn on.
+10. **Verify** — `npm install && npm test` (worker + renderer + cross-sell tests), then dry-run +
+    test-send, then turn on.
+
+## Cross-sell (add when the platform has a catalog of similar products)
+
+1. Map the host's Product model to the matcher (`references/cross-sell.md` §3) and detect the
+   **product noun** (`course` / `car` / `destination` / `property` / `product`).
+2. Add the settings columns + `email_sequence_enrollments`, `user_product_feedback`,
+   `email_feedback_tokens` (`examples/data-model.md`).
+3. Add the admin **Cross-sell toggle** in Settings (`references/admin-ui.md`).
+4. Wire the two signed endpoints `GET /email-automation/feedback/{enrollment}/{like|dislike}`
+   (`references/cross-sell.md` §4).
+5. Use `examples/cross-sell.mjs` (`ProductSimilarityMatcher` + `CrossSellEngine`) as the tested core.
 
 ## Rules on one screen
 
@@ -43,6 +55,7 @@ The minimal path to a working Email Automation section. Read the other reference
 - **≤1 active marketing sequence per user** (precedence).
 - Frequency cap + **quiet hours in the user's timezone** + max deferrals.
 - **0% discount = no discount text** (tested).
+- **Cross-sell toggle guards every job/listener/worker** (`cross_sell_automation_enabled`).
 - **Stop-conditions checked at send time** (never email a buyer).
 - Templates: reuse the existing editor; sanitize + email-safe transform.
 - Additive, reversible, tested; never break existing flows.

@@ -226,6 +226,7 @@ The full sent log, **paginated by 100**:
 - **Limits:** max emails/user/24h, max/week, quiet-hours window.
 - **Attribution window** (default 7 days).
 - **Admin tables toggle** (see below) + instructions.
+- **Cross-sell panel** (see below) — the intelligent multi-product recommendation toggle.
 - Test-send button.
 
 ### Channels (email · push · WhatsApp · SMS)
@@ -243,6 +244,22 @@ push · `message-circle` WhatsApp · `smartphone` SMS — and a status badge (**
 
 If a channel has no provider/credentials, any sequence using it is blocked and a health warning is shown
 (`references/health-checks.md`). Full channel rules: `references/channels.md`.
+
+### Cross-sell (intelligent multi-product recommendations)
+
+A small panel inside Settings for the post-abandonment recommendation loop
+(`references/cross-sell.md`):
+
+- **Master toggle** — *"Intelligent cross-sell sequences"* **ON / OFF** (maps to
+  `cross_sell_automation_enabled`). Ships **ON by default** but respects the overall master switch; the
+  sequence itself still ships paused until the admin turns the sequence on.
+- **Cooldown** (days, default 7) — the pause between the initial sequence finishing and Email 1.
+- **Re-enrol delay** (hours, 24–48) — how long after a Dislike the next product's sequence starts.
+- **Max per user** (default 5) — cap on cross-sell sequences per user.
+- **Product noun** (singular + plural) — `course`/`courses`, `car`/`cars`, `destination`/`destinations`,
+  `property`/`properties`, `product`/`products`. Live-preview the Email 1 subject line as the admin
+  types.
+- **Guard:** every cross-sell job, listener and worker checks the toggle before enrolling or sending.
 
 ---
 

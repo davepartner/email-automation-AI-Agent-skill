@@ -9,7 +9,8 @@ description: >-
   recovery, push/WhatsApp/SMS reminders, or an "Email Automation" admin menu. Triggers: "email
   automation", "drip campaign", "abandoned cart emails", "reminder emails", "lifecycle emails", "welcome
   sequence", "win-back emails", "upsell emails", "push notifications", "whatsapp reminders", "sms
-  reminders", "notification automation".
+  reminders", "notification automation", "cross-sell sequence", "product recommendation email",
+  "similar product", "like/dislike feedback".
 ---
 
 # Email Automation — Admin Section Builder
@@ -117,6 +118,7 @@ Full detail, copy intent, and stop conditions: `references/sequences.md`. Summar
 | 7 | **Win-back / re-engagement** | Inactive 30 / 60 / 90 days | Neutral → value → final "we'll stop" | Activity / unsubscribe |
 | 8 | **Replenishment** | Consumable product | ~Day 45–60 | Repurchase |
 | 9 | **Payday re-engage** | Product lead pending ≥ 7 days | 27th → last day → 2nd (calendar) | Purchase / per-product opt-out |
+| 10 | **Intelligent cross-sell** | Initial sequence ends, no purchase | **7d cooldown → 7 / 10 / 14** with Like/Dislike | Like / Dislike / purchase / unsubscribe |
 
 **Payday is a *nurture* sequence** — per product, runs alongside the promotional sequence, and shares the
 one-marketing-email-per-day cap, so it never clashes with the cart reminders. On purchase the lead moves
@@ -133,6 +135,12 @@ referral. See `references/sequences.md`.
 **Plus platform-derived sequences** discovered from the app's purpose — e.g. **email verification,
 profile completion, onboarding setup, KYC, billing/trial ending, booking reminders, renewals**. Only add
 the ones the platform can detect and act on (`references/sequences.md`).
+
+**Intelligent cross-sell** (sequence 10) upgrades the dead-end where the initial sequence finishes with no
+purchase: after a **7-day cooldown** it picks the **next most similar product**, extracts its features,
+uses the platform's **exact product noun** (`course` / `car` / `destination` / `property`), and enrols the
+user in a **hand-typed 3-email sequence** with signed **Like / Dislike** links. Full spec:
+`references/cross-sell.md`; runnable core + tests: `examples/cross-sell.mjs`.
 
 ---
 
@@ -191,6 +199,13 @@ the ones the platform can detect and act on (`references/sequences.md`).
     allowed and denied attempts, and **fail closed**: if no admin is configured, the surface is closed.
     There is **no** "any signed-in user" or "development mode" bypass. See
     `references/admin-ui.md` §Access control and `references/non-disruption.md` §9.
+15. **Intelligent cross-sell is toggle-gated and noun-aware.** Map the host's Product model + a
+    singular/plural **product noun** (`course`, `car`, `destination`, `property`, `product`) to
+    `ProductSimilarityMatcher`, and keep it editable in Settings. **Every** cross-sell job, event
+    listener, and queue worker checks `cross_sell_automation_enabled === true` before enrolling or
+    dispatching. Like/Dislike are **signed, single-use** endpoints (no login required) —
+    Like redirects to checkout, Dislike blacklists the product and re-enrols the next one after 24–48h.
+    See `references/cross-sell.md`.
 
 ---
 
@@ -272,6 +287,10 @@ Full UI spec: `references/admin-ui.md`.
 10. **Admin access control**: route gate + page check + per-action check, 404 for non-admins,
     `noindex`, denial auditing, and a documented way to appoint the first admin. A screenshot of the
     surface rendering 404 for a normal account is part of the proof, not optional.
+11. **Intelligent cross-sell** (when the platform has a similar-product catalog): the
+    `ProductSimilarityMatcher` service, the signed Like/Dislike endpoints, the 3 hand-typed email
+    templates, the admin toggle + product-noun settings, and the tested state machine
+    (`examples/cross-sell.mjs` + `cross-sell.test.mjs`).
 
 ---
 
@@ -299,11 +318,16 @@ Full UI spec: `references/admin-ui.md`.
 - `references/channels.md` — multi-channel (email · push · WhatsApp · SMS), detection, consent, limits.
 - `references/opt-in-prompts.md` — when and how to ask users to enable push/SMS/WhatsApp.
 - `references/wysiwyg.md` — reuse an existing editor, else add one; email-safe pipeline.
+- `references/cross-sell.md` — intelligent multi-product cross-sell: matching engine, signed Like/Dislike
+  routes, migrations + Eloquent relationships, admin toggle, 7-day cooldown state machine.
 - `references/quickstart.md` — the one-page path.
 - `examples/render.mjs` + `render.test.mjs` — Mustache email renderer + 0%-discount test.
-- Run the tests with `npm install && npm test` (worker + renderer).
+- Run the tests with `npm install && npm test` (worker + renderer + cross-sell).
 - `references/reference-implementation.md` — the engine in pseudocode + SQL (locking, reaper, attribution).
 - `examples/worker.mjs` + `examples/worker.test.mjs` — executable, tested scheduler/worker core.
+- `examples/cross-sell.mjs` + `examples/cross-sell.test.mjs` — `ProductSimilarityMatcher` +
+  `CrossSellEngine` + signed feedback tokens (22 tests).
+- `examples/cross-sell-templates.md` — the 3 hand-typed cross-sell emails (Like/Dislike links).
 - `examples/data-model.md` — DB schema.
 - `examples/sequence-config.json` — a concrete, editable sequence config.
 - `examples/email-templates.md` — sample rendered emails.

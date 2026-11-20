@@ -60,7 +60,14 @@ email_settings
   fallback_timezone(varchar, default 'UTC'),   -- when a user has no timezone
   attribution_window_days(int, default 7),
   show_admin_tables(bool, default true),
-  last_cron_run_at(timestamp, nullable)        -- heartbeat for the cron health check
+  last_cron_run_at(timestamp, nullable),       -- heartbeat for the cron health check
+  -- Intelligent cross-sell (see references/cross-sell.md)
+  cross_sell_automation_enabled(bool, DEFAULT true),
+  cross_sell_cooldown_days(int, default 7),
+  cross_sell_reenroll_delay_hours(int, default 24),   -- dislike → next seq 24–48h later
+  cross_sell_max_per_user(int, default 5),
+  platform_product_noun_singular(varchar, default 'product'),
+  platform_product_noun_plural(varchar, default 'products')
 
 email_suppressions
   id, email (unique), reason(unsubscribed | hard_bounce | complaint | admin),
@@ -111,6 +118,24 @@ email_unsubscribe_tokens
   -- Reject tokens with no/unknown scope, expired tokens, and a jti already used.
   -- Never infer "all" from a missing scope.
 
+email_sequence_enrollments                  -- cross-sell (and initial) sequence state
+  id, user_id FK, source_product_id FK(nullable),   -- the product they originally checked out
+  recommended_product_id FK(nullable),              -- the product being recommended
+  sequence_type(varchar, default 'initial_abandonment'),  -- initial_abandonment | cross_sell
+  current_step(int, default 1),                     -- 1 | 2 | 3
+  status(active | paused | completed | liked | disliked | cancelled),
+  next_send_at(timestamp, nullable), created_at, updated_at,
+  INDEX(user_id, status), INDEX(recommended_product_id, status)
+
+user_product_feedback                       -- Like / Dislike + permanent blacklist
+  id, user_id FK, product_id FK, action(like | dislike),
+  enrollment_id FK(nullable), created_at, updated_at,
+  UNIQUE(user_id, product_id, action)               -- one dislike = permanent blacklist
+
+email_feedback_tokens                       -- signed Like/Dislike click tokens
+  id, enrollment_id FK, jti(unique), action(like | dislike),
+  expires_at, used_at(nullable), created_at, updated_at
+
 user_events (optional, if the app has no hooks)
   id, user_id FK, type(registration | login | cart_add | checkout_start | product_view |
                       activation | purchase | review | inactivity),
@@ -127,6 +152,9 @@ admin_audit
 - **`group = holdout`** users receive no marketing emails; they are the control for honest lift.
 - **`trigger_ref`** (e.g. cart id, date bucket) makes enrolment idempotent across polling runs.
 - **`ab_variant`** on steps enables subject/body A/B; `email_sent.ab_variant` records which was sent.
+- **Cross-sell** (`references/cross-sell.md`) reuses `email_scheduled` for the actual sends but tracks
+  its own per-user `email_sequence_enrollments` + `user_product_feedback`. The global
+  `cross_sell_automation_enabled` toggle gates every cross-sell job, listener and worker.
 
 ## Conventions
 

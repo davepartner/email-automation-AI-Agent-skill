@@ -154,6 +154,41 @@ that initial sequence has finished (~7 days after abandonment) and the product i
 
 ---
 
+## 10. Intelligent cross-sell (similar product, post-abandonment)
+
+When the initial abandonment sequence finishes and the user **still hasn't purchased**, the automation no
+longer stops. It pauses for a **cooldown** (`cross_sell_cooldown_days`, default **7 days**), then picks
+the **next most similar product**, extracts its features, and enrols the user in a **personal, hand-typed
+3-email sequence** with **Like / Dislike** links.
+
+| Step | When | Intent |
+|------|------|--------|
+| 1 | Day 7 (after cooldown) | "saw this {singular} and thought of you" — recommend the matched product, reference why |
+| 2 | Day 10 (+3d) | "quick thought on {product}" — social proof ("people who looked at X go with Y") |
+| 3 | Day 14 (+4d) | "should i take {product} off your list?" — last note |
+
+- **Trigger:** the `initial_abandonment` sequence for a product completes with no purchase, and
+  `cross_sell_automation_enabled` is **true** (the guard clause).
+- **Matching:** `ProductSimilarityMatcher` (`examples/cross-sell.mjs`) — multi-tier fallback (metadata/
+  taxonomy → keyword/semantic overlap → collaborative filtering), excluding purchased, completed, and
+  disliked products.
+- **Like:** `status='liked'`, cancel the remaining emails, `302` redirect to the product checkout URL
+  with UTM params.
+- **Dislike:** `status='disliked'`, permanently blacklist that product for the user, halt the sequence,
+  and enrol the **next** eligible product after `cross_sell_reenroll_delay_hours` (24–48h).
+- **Ignored after Email 3:** `status='completed'`; wait another cooldown cycle, then evaluate the next
+  eligible product — up to `cross_sell_max_per_user` (default 5).
+- **Noun-aware:** emails inject the platform's `platform_product_noun_singular` / `_plural`
+  (`course` / `car` / `destination` / `property` / `product`) and reference why the product was picked
+  from the user's past activity.
+- **Stop:** like, dislike (moves to next), purchase, global unsubscribe.
+- **Kind:** `nurture` — per-user, runs after the promotional sequence ends, shares the 1/day cap.
+- **Hand-typed aesthetic:** plain-text-style HTML, lowercase subject lines, Like/Dislike as inline text
+  links. Exact copy: `examples/cross-sell-templates.md`; state machine + controllers:
+  `references/cross-sell.md`.
+
+---
+
 ## Discount & urgency rules
 
 - **Default discount per sequence = 0%.** 0% ⇒ **omit any discount text entirely** (no "0% off", no
@@ -177,6 +212,7 @@ most one promotional sequence, highest priority wins (lower number = higher prio
 | 4 | Welcome / activate | no-login, inactive |
 | 5 | No-login | inactive |
 | 6 | **Payday re-engage (nurture)** | runs *alongside* the promotional sequence |
+| 6 | **Cross-sell (nurture)** | runs *after* the promotional sequence ends (cooldown) |
 | 7 | Inactive / re-engage | win-back |
 | 8 | Win-back | — |
 
