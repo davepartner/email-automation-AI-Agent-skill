@@ -273,6 +273,21 @@ A small panel inside Settings for the post-abandonment recommendation loop
 
 ---
 
+## List-level campaigns above every admin table
+
+Do not bury manual outreach in one page. Every admin user list — orders/payments, abandoned carts,
+leads, buyers, subscribers, course students — carries an **“Email these users”** button in its table
+header, marked **Admin only**. It opens the composer from `references/list-campaigns.md`:
+
+- current filters define the recipients; show the count;
+- one of **new-content reminder** or **product recommendation sequence**;
+- product search by id/title, unlimited products;
+- price formats + exchange rate;
+- start → 2–5/min, pause/resume, sent/click/format report.
+
+It uses the same suppression list, provider and click tracking as the sequences. It is a manual,
+bounded campaign — never a second lifecycle engine, and never a duplicate of the cross-sell sequence.
+
 ## Admin-only tables on product & checkout pages
 
 At the **bottom** of each **product detail** and **checkout** page, show a table **only to admins** —
