@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-26 — List-level reminder / upsell campaigns
+
+Adds an on-demand **“Email these users”** button above **every** admin user list table
+(orders, abandoned carts, leads, buyers, subscribers, course students), without duplicating the
+lifecycle engine.
+
+- **New-content reminder** — one email to past buyers telling them new content was added, with a
+  tracked auto-login link back to the product.
+- **Product recommendation sequence** — five emails at day **0 / 3 / 6 / 9 / 12**, then stop. Unlimited
+  products per campaign, price formats (`₦14,000 (~$10)`, no price, `₦14000`, `14000`, `14k`), an
+  admin-set exchange rate, benefits from the product description, duration, a short FOMO line, and a
+  different subject/format each step.
+- **Tracking and reporting** — signed click route records the click and redirects to the platform's
+  auto-login URL; the list page shows sent, clicks, CTR, a sent-vs-clicks chart and per-format
+  performance, with only Pause **or** Resume visible for the current status.
+- **Pacing and safety** — random **2–5 emails/minute**, send window, provider credit guard, global
+  suppression, per-sequence opt-out, and purchase-stop.
+- **Admin-only** — button and stats are admin-only and visibly badged “Admin only”; server actions
+  re-check permission.
+- **Non-duplication** — reuses the existing provider, suppression list, click tracking and templates;
+  it is a manual/bounded campaign, not a second lifecycle engine.
+- Docs: `references/list-campaigns.md`, `SKILL.md`, `README.md`.
+
 ## 2026-11-20 — Intelligent cross-sell: similar-product recommendation sequences
 
 New capability: when the initial abandonment sequence finishes with no purchase, the automation no

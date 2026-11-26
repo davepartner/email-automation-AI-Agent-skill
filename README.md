@@ -41,6 +41,7 @@ nothing breaks and nothing sends until you say so.
 | 💰 **Payday re-engagement** | a separate **27th → last day → 2nd** reminder set for still-pending products; **Leads → Paid** on purchase; per-product opt-out |
 | 🎯 **Intelligent cross-sell** | after a **7-day cooldown**, recommend the **next most similar product** (metadata → semantic → collaborative matching) in a hand-typed 3-email sequence with signed **Like / Dislike** links that re-enrol or redirect |
 | 👤 **User profile sequences** | an admin-only **active / previous / pending** sequence list per user with **stop one** · **add to a sequence** (product search by id/title) · **stop all** — plus a user-facing **"Stop promotional emails"** button |
+| 📋 **List campaigns** | an **“Email these users”** button above **every** admin list table (orders, abandoned carts, leads, buyers, students): new-content reminder or product-recommendation sequence, price formats + exchange rate, 2–5/min pacing, tracked auto-login clicks, opt-out and a sent-vs-click/format report |
 | 🩺 **Health checks** | banners when emails can't send: **paused**, **cron not running** (with exact fix commands), **no SMTP/API key** (with setup steps) |
 | 👤 **User controls** | search a user by email, expand their sequence with a caret, **cancel one specific email** or **exclude the user** from all automation |
 | 🗂️ **Recipients log** | every user + emails sent/scheduled, **paginated by 100**, with *when* and *why* |

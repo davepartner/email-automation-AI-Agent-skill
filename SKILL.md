@@ -10,7 +10,8 @@ description: >-
   automation", "drip campaign", "abandoned cart emails", "reminder emails", "lifecycle emails", "welcome
   sequence", "win-back emails", "upsell emails", "push notifications", "whatsapp reminders", "sms
   reminders", "notification automation", "cross-sell sequence", "product recommendation email",
-  "similar product", "like/dislike feedback".
+  "similar product", "like/dislike feedback", "email these users", "email this list",
+  "new content reminder", "list campaign".
 ---
 
 # Email Automation — Admin Section Builder
@@ -142,6 +143,14 @@ uses the platform's **exact product noun** (`course` / `car` / `destination` / `
 user in a **hand-typed 3-email sequence** with signed **Like / Dislike** links. Full spec:
 `references/cross-sell.md`; runnable core + tests: `examples/cross-sell.mjs`.
 
+**List-level campaigns (on demand).** Above **every admin user list** — orders, abandoned carts,
+leads, buyers, subscribers, course students — add one **“Email these users”** button. It opens a
+composer for either a **new-content/update reminder** or a **recommend products** sequence. It uses
+the table's current filters as the recipient set, sends 2–5 emails/minute, rotates price formats,
+tracks clicks, auto-logs the user in, and stops on purchase or opt-out. This is a manual, bounded
+campaign surface; it reuses the suppression list, provider and templates, and never becomes a second
+lifecycle engine. Full spec: `references/list-campaigns.md`.
+
 ---
 
 ## Non-negotiable rules
@@ -254,6 +263,10 @@ user in a **hand-typed 3-email sequence** with signed **Like / Dislike** links. 
     detect/reuse the app's provider or add API keys, test-send, enable/disable.
   - **Statistics are not a tab** — they live at the top of Sequences so the admin sees performance and
     the list in one place.
+- **List-level campaign button** above **every** admin user list table (orders, abandoned carts,
+  leads, buyers, subscribers, course students): **“Email these users”**, marked **Admin only**, with
+  new-content and product-recommendation intents, recipient count from the current filters, pacing,
+  pause/resume, click/format stats. See `references/list-campaigns.md`.
 - **Admin-only tables** at the bottom of **product** and **checkout** pages:
   - Tabs **Leads** (pending) / **Paid** — clearly marked *"Admin only"*. A purchase moves the user from
     **Leads → Paid** and into the paid-product sequences.
@@ -302,6 +315,11 @@ Full UI spec: `references/admin-ui.md`.
     sequence** (product search by id/title), and **stop all** buttons; plus a user-facing **"Stop
     promotional emails"** button that stops all sequences and blocks re-enrolment. See
     `references/user-profile.md`.
+13. **List-level reminder / upsell campaigns** — one admin-only **“Email these users”** button above
+    every user-list table (orders, abandoned carts, leads, buyers, students), with new-content and
+    product-recommendation modes, price formats + exchange rate, a 0/3/6/9/12 sequence, tracked
+    auto-login links, opt-out, purchase-stop and a sent-vs-click/format report. See
+    `references/list-campaigns.md`.
 
 ---
 
@@ -333,6 +351,8 @@ Full UI spec: `references/admin-ui.md`.
   routes, migrations + Eloquent relationships, admin toggle, 7-day cooldown state machine.
 - `references/user-profile.md` — the per-user **active / previous / pending** sequence surface with
   admin stop-one / add / stop-all and the user's "Stop promotional emails" self-service opt-out.
+- `references/list-campaigns.md` — the on-demand **Email these users** button for every admin list
+  table: new-content and upsell modes, formats, pacing, click tracking and reporting.
 - `references/quickstart.md` — the one-page path.
 - `examples/render.mjs` + `render.test.mjs` — Mustache email renderer + 0%-discount test.
 - Run the tests with `npm install && npm test` (worker + renderer + cross-sell).
